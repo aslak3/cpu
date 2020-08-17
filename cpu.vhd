@@ -40,7 +40,6 @@ package P_CPU is
 	constant JUMPTYPE_ZERO :	T_JUMPTYPE := "10";
 	constant JUMPTYPE_NEG :		T_JUMPTYPE := "11";
 	
-	
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
 		S_NOP1,
@@ -49,7 +48,6 @@ package P_CPU is
 		S_LOADR1, S_LOADR2, S_STORER1, S_STORER2,
 		S_ALU1, S_ALU2
 	);
-
 end package;
 	
 library IEEE;

@@ -18,8 +18,7 @@ package P_ALU is
 	constant OP_NOT : 		T_ALU_OP := x"b";
 	constant OP_LEFT : 		T_ALU_OP := x"c";
 	constant OP_RIGHT :	 	T_ALU_OP := x"d";
-	constant OP_NULL :		T_ALU_OP := x"f";
-	
+	constant OP_NULL :		T_ALU_OP := x"f";	
 end package;
 
 library IEEE;
@@ -96,5 +95,4 @@ begin
 	CARRY_OUT <= TEMP_RESULT (16);
 	ZERO_OUT <= '1' when (TEMP_RESULT (15 downto 0) = x"00") else '0';
 	NEG_OUT <= TEMP_RESULT (15);
-	
 end architecture;
