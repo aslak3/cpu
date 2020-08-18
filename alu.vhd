@@ -18,7 +18,8 @@ package P_ALU is
 	constant OP_NOT : 		T_ALU_OP := x"b";
 	constant OP_LEFT : 		T_ALU_OP := x"c";
 	constant OP_RIGHT :	 	T_ALU_OP := x"d";
-	constant OP_NULL :		T_ALU_OP := x"f";	
+	constant OP_COPY :		T_ALU_OP := x"e";
+	constant OP_NULL :		T_ALU_OP := x"f";
 end package;
 
 library IEEE;
@@ -57,13 +58,13 @@ begin
 
 				case OP is
 					when OP_ADD =>
-						TEMP_RESULT <= TEMP_LEFT + TEMP_RIGHT;
+						TEMP_RESULT <= TEMP_RIGHT + TEMP_LEFT;
 					when OP_ADDC =>
-						TEMP_RESULT <= TEMP_LEFT + TEMP_RIGHT + CARRY_IN;
+						TEMP_RESULT <= TEMP_RIGHT + TEMP_LEFT + CARRY_IN;
 					when OP_SUB =>
-						TEMP_RESULT <= TEMP_LEFT - TEMP_RIGHT;
+						TEMP_RESULT <= TEMP_RIGHT - TEMP_LEFT;
 					when OP_SUBC =>
-						TEMP_RESULT <= TEMP_LEFT - TEMP_RIGHT - CARRY_IN;
+						TEMP_RESULT <= TEMP_RIGHT - TEMP_LEFT - CARRY_IN;
 					when OP_INC =>
 						TEMP_RESULT <= TEMP_RIGHT + 1;
 					when OP_INCD =>
@@ -73,24 +74,26 @@ begin
 					when OP_DECD =>
 						TEMP_RESULT <= TEMP_RIGHT - 2;
 					when OP_AND =>
-						TEMP_RESULT <= TEMP_LEFT and TEMP_RIGHT;
+						TEMP_RESULT <= TEMP_RIGHT and TEMP_LEFT;
 					when OP_OR =>
-						TEMP_RESULT <= TEMP_LEFT or TEMP_RIGHT;
+						TEMP_RESULT <= TEMP_RIGHT or TEMP_LEFT;
 					when OP_XOR =>
-						TEMP_RESULT <= TEMP_LEFT xor TEMP_RIGHT;
+						TEMP_RESULT <= TEMP_RIGHT xor TEMP_LEFT;
 					when OP_NOT =>
 						TEMP_RESULT <= not ('1' & TEMP_RIGHT (15 downto 0));
 					when OP_LEFT =>
 						TEMP_RESULT <= TEMP_RIGHT (15 downto 0) & '0';
 					when OP_RIGHT =>
 						TEMP_RESULT <= TEMP_RIGHT (0) & '0' & TEMP_RIGHT (15 downto 1);
+					when OP_COPY =>
+						TEMP_RESULT <= TEMP_LEFT;
 					when others =>
 						TEMP_RESULT <= (others => '0');
 				end case;
 			end if;
 		end if;
 	end process;
-	
+
 	RESULT <= TEMP_RESULT (15 downto 0);
 	CARRY_OUT <= TEMP_RESULT (16);
 	ZERO_OUT <= '1' when (TEMP_RESULT (15 downto 0) = x"00") else '0';

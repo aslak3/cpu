@@ -8,17 +8,19 @@ end entity;
 architecture behavioral of registers_tb is
 	signal CLOCK : STD_LOGIC;
 	signal RESET : STD_LOGIC;
+	signal REGS_CLEAR : STD_LOGIC := '0';
 	signal REGS_WRITE : STD_LOGIC := '0';
 	signal REGS_READ_LEFT_INDEX : T_REG_INDEX;
 	signal REGS_READ_RIGHT_INDEX : T_REG_INDEX;
 	signal REGS_WRITE_INDEX : T_REG_INDEX;
 	signal REGS_LEFT_OUTPUT : T_REG;
 	signal REGS_RIGHT_OUTPUT : T_REG;
-	signal REGS_INPUT : T_REG;	
+	signal REGS_INPUT : T_REG;
 begin
 	dut: entity work.registers port map (
 		CLOCK => CLOCK,
 		RESET => RESET,
+		CLEAR => REGS_CLEAR,
 		WRITE => REGS_WRITE,
 		READ_LEFT_INDEX => REGS_READ_LEFT_INDEX,
 		READ_RIGHT_INDEX => REGS_READ_RIGHT_INDEX,
@@ -27,7 +29,7 @@ begin
 		RIGHT_OUTPUT => REGS_RIGHT_OUTPUT,
 		INPUT => REGS_INPUT
 	);
-	
+
 	process
 		procedure clock_delay is
 		begin
@@ -40,31 +42,46 @@ begin
 		RESET <= '1';
 		wait for 1 ns;
 		RESET <= '0';
-		
+
 		REGS_READ_LEFT_INDEX <= "000";
 		REGS_READ_RIGHT_INDEX <= "001";
 		REGS_WRITE <= '0';
-		
+
 		clock_delay;
-		
+
 		assert REGS_LEFT_OUTPUT = x"0000" and REGS_RIGHT_OUTPUT = x"0000"
 			report "Reset failed" severity failure;
 
 		REGS_INPUT <= x"1234";
 		REGS_WRITE <= '1';
 		REGS_WRITE_INDEX <= "000";
-		
+
 		clock_delay;
-		
+
 		REGS_READ_LEFT_INDEX <= "000";
 		REGS_READ_RIGHT_INDEX <= "000";
 		REGS_WRITE <= '0';
-		
+
 		clock_delay;
-		
+
 		assert REGS_LEFT_OUTPUT = x"1234" and REGS_RIGHT_OUTPUT = x"1234"
-			report "Read/Write of reg 1 failed" severity failure;
-		
+			report "Read/Write of reg 0 failed" severity failure;
+
+		REGS_CLEAR <= '1';
+		REGS_WRITE_INDEX <= "000";
+
+		clock_delay;
+
+		REGS_CLEAR <= '0';
+		REGS_READ_LEFT_INDEX <= "000";
+		REGS_READ_RIGHT_INDEX <= "000";
+		REGS_WRITE <= '0';
+
+		clock_delay;
+
+		assert REGS_LEFT_OUTPUT = x"0000" and REGS_RIGHT_OUTPUT = x"0000"
+			report "Read/Clear of reg 0 failed" severity failure;
+
 		report "+++All good";
 		std.env.finish;
 	end process;
@@ -102,20 +119,20 @@ begin
 			CLOCK <= '0';
 			wait for 1 ns;
 		end procedure;
-	begin		
+	begin
 		RESET <= '1';
 		wait for 1 ns;
 		RESET <= '0';
-		
+
 		clock_delay;
-		
+
 		assert PC_OUTPUT = x"0000"
 			report "PC reset" severity failure;
 
 		PC_INCREMENT <= '1';
 		clock_delay;
 		PC_INCREMENT <= '0';
-		
+
 		assert PC_OUTPUT = x"0001"
 			report "PC increment" severity failure;
 
@@ -123,12 +140,12 @@ begin
 		PC_INPUT <= x"1234";
 		clock_delay;
 		PC_WRITE <= '0';
-		
+
 		assert PC_OUTPUT = x"1234"
 			report "PC jump" severity failure;
 
 		clock_delay;
-		
+
 		assert PC_OUTPUT = x"1234"
 			report "PC same value" severity failure;
 

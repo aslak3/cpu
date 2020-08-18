@@ -12,26 +12,35 @@ This is also a work in progress.
 * 8 x 16 bit general purpose registers
 * 16 bit Program Counter
 * Load and store instructions operate either through a register or an immediate address
+* Clear instruction
 * Simple status bits: zero, negative, carry
-* ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right
-* ALU operations are of the form DEST <= DEST op SOURCE, or DEST <= op SOURCE, where both are registers.
+* ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right, copy
+* ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST, where both are registers.
 * Conditional jumps: always, on each flag set and on each flag clear
 * Nop instruction
+* No microcode: a coded state machine is used
 
 # Additional limitations
 
 * No interrupts
-* No byte wide operations at least initially
+* No byte wide operations at least initially (the ALU has INCD/DECD instructions which will someday fascilitate byte/word increments)
 
 # TODO
 
-* Clear instruction, if its implementation can  be achieved in less cycles then xor
-No microcode: a coded state machine will be used
 * Some kind of assembler
 * Proper testbench for the cpu controller
-* Wrap it in a FPGA and connect up peripherals and RAM/ROM
+* Wrap it in an FPGA and connect up peripherals and RAM/ROM
 * Eliminate empty states
 * Add more instructions!
+  - Compare
+  - Bit test (non distructive and)
+  - Relative addressing
+  - ....
+* Properly implement twos complement
+  - Arithmatic shifts
+* Better status bits: not currently settable, nor are they changed on
+anything other then an ALU instruction
+* Hardware stack, subroutines
 
 # Opcode map
 
@@ -154,7 +163,7 @@ No microcode: a coded state machine will be used
 <td>1</td>
 <td>0</td>
 <td>1</td>
-<td>000d<td>
+<td>000d</td>
 </tr>
 <tr>
 <td>JUMPNZ</td>
