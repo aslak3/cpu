@@ -18,13 +18,14 @@ architecture behavioral of cpu_tb is
 	signal CPU_WRITE : STD_LOGIC;
 	type MEM is ARRAY (0 to 31) of T_OPCODE;
 	signal RAM : MEM := (
+x"0000",
 x"0030",
 x"0011",
 x"0001",
 x"0013",
-x"0011",
+x"0012",
 x"0014",
-x"000F",
+x"000E",
 x"1E0A",
 x"1001",
 x"1E10",
@@ -32,10 +33,9 @@ x"0099",
 x"1403",
 x"1604",
 x"000C",
-x"0007",
 x"0008",
-x"000F",
-		x"0000",  -- 14: NOP
+x"0008",
+x"0010",
 		x"0000",  -- 14: NOP
 		x"0000",  -- 14: NOP
 		x"0000",  -- 14: NOP

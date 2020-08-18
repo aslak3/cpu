@@ -44,11 +44,9 @@ package P_CPU is
 
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
-		S_NOP1,
-		S_JUMP1, S_JUMP2, S_JUMP_TAKEN1, S_JUMP_TAKEN2, S_JUMP_SKIP1,
-		S_LOADI1, S_LOADI2, S_LOADI3, S_STOREI1, S_STOREI2, S_STOREI3,
-		S_CLEAR1,
-		S_LOADR1, S_LOADR2, S_STORER1, S_STORER2,
+		S_JUMP1, S_JUMP_TAKEN1, S_JUMP_TAKEN2, S_JUMP_SKIP1,
+		S_LOADI1, S_LOADI2, S_STOREI1, S_STOREI2,
+		S_LOADR1, S_LOADR2, S_STORER1,
 		S_ALU1, S_ALU2
 	);
 end package;
@@ -165,16 +163,16 @@ begin
 				when S_FETCH1 =>
 					ADDRESS <= PC_OUTPUT;
 					READ <= '1';
+					PC_INCREMENT <= '1';
 					STATE <= S_FETCH2;
 
 				when S_FETCH2 =>
 					OPCODE <= T_OPCODE(DATA_IN);
-					PC_INCREMENT <= '1';
 					--report "CPU: Reading opcode " & to_hstring(OPCODE) & " from " & to_hstring(PC_OUTPUT);
 
 					case? DATA_IN is
 						when OPCODE_NOP =>
-							STATE <= S_NOP1;
+							STATE <= S_FETCH1;
 
 						when OPCODE_JUMP =>
 							STATE <= S_JUMP1;
@@ -190,7 +188,7 @@ begin
 						when OPCODE_CLEAR =>
 							REGS_WRITE_INDEX <= RIGHT_INDEX;
 							REGS_CLEAR <= '1';
-							STATE <= S_CLEAR1;
+							STATE <= S_FETCH1;
 
 						when OPCODE_LOADR =>
 							STATE <= S_LOADR1;
@@ -207,40 +205,28 @@ begin
 							STATE <= S_FETCH1;
 					end case?;
 
-				when S_NOP1 =>
-					STATE <= S_FETCH1;
-
 				when S_LOADI1 =>
-					STATE <= S_LOADI2;
-
-				when S_LOADI2 =>
 					ADDRESS <= PC_OUTPUT;
 					READ <= '1';
 					PC_INCREMENT <= '1';
-					STATE <= S_LOADI3;
+					STATE <= S_LOADI2;
 
-				when S_LOADI3 =>
+				when S_LOADI2 =>
 					REGS_INPUT <= T_REG(DATA_IN);
 					REGS_WRITE_INDEX <= RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					STATE <= S_FETCH1;
 
 				when S_STOREI1 =>
-					STATE <= S_STOREI2;
-
-				when S_STOREI2 =>
 					ADDRESS <= PC_OUTPUT;
 					READ <= '1';
 					PC_INCREMENT <= '1';
-					STATE <= S_STOREI3;
+					STATE <= S_STOREI2;
 
-				when S_STOREI3 =>
+				when S_STOREI2 =>
 					ADDRESS <= DATA_IN;
 					DATA_OUT <= STD_LOGIC_VECTOR(RIGHT);
 					WRITE <= '1';
-					STATE <= S_FETCH1;
-
-				when S_CLEAR1 =>
 					STATE <= S_FETCH1;
 
 				when S_LOADR1 =>
@@ -255,9 +241,6 @@ begin
 					STATE <= S_FETCH1;
 
 				when S_STORER1 =>
-					STATE <= S_STORER2;
-
-				when S_STORER2 =>
 					report "CPU: STORER Address reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Data reg=" &
 						to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")";
 					ADDRESS <= STD_LOGIC_VECTOR(LEFT);
@@ -266,9 +249,6 @@ begin
 					STATE <= S_FETCH1;
 
 				when S_JUMP1 =>
-					STATE <= S_JUMP2;
-
-				when S_JUMP2 =>
 					ADDRESS <= PC_OUTPUT;
 					READ <= '1';
 					report "CPU: Jumping condition=" & to_string(JUMPTYPE) & " Polarity=" & STD_LOGIC'image(JUMP_POLARITY);
