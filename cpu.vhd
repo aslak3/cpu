@@ -17,23 +17,9 @@ package P_CPU is
 	constant OPCODE_CLEAR :		T_OPCODE := "00000000" & "00110---";
 	constant OPCODE_LOADR :		T_OPCODE := "00000000" & "01------";
 	constant OPCODE_STORER :	T_OPCODE := "00000000" & "10------";
+	constant OPCODE_LED :		T_OPCODE := "00000000" & "1100000-";
 
 	constant OPCODE_ALU :		T_OPCODE := "0001----" & "00------";
-	constant OPCODE_ADD :		T_OPCODE := "00010000" & "00------";
-	constant OPCODE_ADDC :		T_OPCODE := "00010001" & "00------";
-	constant OPCODE_SUB :		T_OPCODE := "00010010" & "00------";
-	constant OPCODE_SUBC :		T_OPCODE := "00010011" & "00------";
-	constant OPCODE_INC :		T_OPCODE := "00010100" & "00------";
-	constant OPCODE_INCD :		T_OPCODE := "00010101" & "00------";
-	constant OPCODE_DEC :		T_OPCODE := "00010110" & "00------";
-	constant OPCODE_DECD :		T_OPCODE := "00010111" & "00------";
-	constant OPCODE_AND :		T_OPCODE := "00011000" & "00------";
-	constant OPCODE_OR :		T_OPCODE := "00011001" & "00------";
-	constant OPCODE_XOR :		T_OPCODE := "00011010" & "00------";
-	constant OPCODE_NOT :		T_OPCODE := "00011011" & "00------";
-	constant OPCODE_LEFT :		T_OPCODE := "00011100" & "00------";
-	constant OPCODE_RIGHT :		T_OPCODE := "00011101" & "00------";
-	constant OPCODE_COPY :		T_OPCODE := "00011110" & "00------";
 
 	subtype T_JUMPTYPE is STD_LOGIC_VECTOR (1 downto 0);
 
@@ -47,6 +33,7 @@ package P_CPU is
 		S_JUMP1, S_JUMP_TAKEN1, S_JUMP_TAKEN2, S_JUMP_SKIP1,
 		S_LOADI1, S_LOADI2, S_STOREI1, S_STOREI2,
 		S_LOADR1, S_LOADR2, S_STORER1,
+		S_LED1,
 		S_ALU1, S_ALU2
 	);
 end package;
@@ -67,14 +54,15 @@ entity cpu is
 		DATA_IN : in STD_LOGIC_VECTOR (15 downto 0);
 		DATA_OUT : out STD_LOGIC_VECTOR (15 downto 0);
 		READ : out STD_LOGIC;
-		WRITE : out STD_LOGIC
+		WRITE : out STD_LOGIC;
+		LED : out STD_LOGIC
 		);
 end entity;
 
 architecture behavioural of cpu is
 	-- Shared
-	signal LEFT, RIGHT : STD_LOGIC_VECTOR (15 downto 0);  -- inputs
-	signal OPCODE : T_OPCODE;
+	signal LEFT, RIGHT : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');  -- inputs
+	signal OPCODE : T_OPCODE := (others => '0');
 	alias OP : T_ALU_OP is OPCODE (11 downto 8);
 	alias LEFT_INDEX : T_REG_INDEX is OPCODE (5 downto 3);
 	alias RIGHT_INDEX : T_REG_INDEX is OPCODE (2 downto 0);
@@ -83,24 +71,24 @@ architecture behavioural of cpu is
 	signal STATE : T_STATE := S_FETCH1;
 
 	-- ALU
-	signal ALU_DO_OP : STD_LOGIC;
-	signal ALU_CARRY_IN : STD_LOGIC ;
-	signal ALU_RESULT : STD_LOGIC_VECTOR (15 downto 0);  -- outputs
-	signal ALU_CARRY_OUT : STD_LOGIC;
-	signal ALU_ZERO_OUT : STD_LOGIC;
-	signal ALU_NEG_OUT : STD_LOGIC;
+	signal ALU_DO_OP : STD_LOGIC := '0';
+	signal ALU_CARRY_IN : STD_LOGIC := '0';
+	signal ALU_RESULT : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');  -- outputs
+	signal ALU_CARRY_OUT : STD_LOGIC := '0';
+	signal ALU_ZERO_OUT : STD_LOGIC := '0';
+	signal ALU_NEG_OUT : STD_LOGIC := '0';
 
 	-- Registers
-	signal REGS_CLEAR : STD_LOGIC;
-	signal REGS_WRITE : STD_LOGIC;
-	signal REGS_WRITE_INDEX : T_REG_INDEX;
-	signal REGS_INPUT : T_REG;
+	signal REGS_CLEAR : STD_LOGIC := '0';
+	signal REGS_WRITE : STD_LOGIC := '0';
+	signal REGS_WRITE_INDEX : T_REG_INDEX := (others => '0');
+	signal REGS_INPUT : T_REG  := (others => '0');
 
 	-- PC
-	signal PC_WRITE : STD_LOGIC;
-	signal PC_INPUT : T_REG;
-	signal PC_INCREMENT : STD_LOGIC;
-	signal PC_OUTPUT : T_REG;
+	signal PC_WRITE : STD_LOGIC := '0';
+	signal PC_INPUT : T_REG := (others => '0');
+	signal PC_INCREMENT : STD_LOGIC := '0';
+	signal PC_OUTPUT : T_REG := (others => '0');
 begin
 	alu: entity work.alu port map (
 		CLOCK => CLOCK,
@@ -150,6 +138,7 @@ begin
 			ALU_DO_OP <= '0';
 			READ <= '0';
 			WRITE <= '0';
+			LED <= '0';
 		elsif (CLOCK'Event and CLOCK = '1') then
 			READ <= '0';
 			WRITE <= '0';
@@ -168,8 +157,7 @@ begin
 
 				when S_FETCH2 =>
 					OPCODE <= T_OPCODE(DATA_IN);
-					--report "CPU: Reading opcode " & to_hstring(OPCODE) & " from " & to_hstring(PC_OUTPUT);
-
+--					report "CPU: Reading opcode " & to_hstring(OPCODE) & " from " & to_hstring(PC_OUTPUT);
 					case? DATA_IN is
 						when OPCODE_NOP =>
 							STATE <= S_FETCH1;
@@ -196,12 +184,15 @@ begin
 						when OPCODE_STORER =>
 							STATE <= S_STORER1;
 
+						when OPCODE_LED =>
+							STATE <= S_LED1;
+
 						when OPCODE_ALU =>
 							ALU_DO_OP <= '1';
 							STATE <= S_ALU1;
 
 						when others =>
-							report "CPU: No opcode match!";
+--							report "CPU: No opcode match!";
 							STATE <= S_FETCH1;
 					end case?;
 
@@ -241,17 +232,21 @@ begin
 					STATE <= S_FETCH1;
 
 				when S_STORER1 =>
-					report "CPU: STORER Address reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Data reg=" &
-						to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")";
+--					report "CPU: STORER Address reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Data reg=" &
+--						to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")";
 					ADDRESS <= STD_LOGIC_VECTOR(LEFT);
 					DATA_OUT <= STD_LOGIC_VECTOR(RIGHT);
 					WRITE <= '1';
 					STATE <= S_FETCH1;
 
+				when S_LED1 =>
+					LED <= OPCODE(0);
+					STATE <= S_FETCH1;
+
 				when S_JUMP1 =>
 					ADDRESS <= PC_OUTPUT;
 					READ <= '1';
-					report "CPU: Jumping condition=" & to_string(JUMPTYPE) & " Polarity=" & STD_LOGIC'image(JUMP_POLARITY);
+--					report "CPU: Jumping condition=" & to_string(JUMPTYPE) & " Polarity=" & STD_LOGIC'image(JUMP_POLARITY);
 
 					case JUMPTYPE is
 						when JUMPTYPE_ALWAYS =>
@@ -300,8 +295,8 @@ begin
 					STATE <= S_ALU2;
 
 				when S_ALU2 =>
-					report "CPU: ALU OP " & to_hstring(OP) & " Operand reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Dest reg=" & to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")" &
-					" Result=" & to_hstring(ALU_RESULT);
+--					report "CPU: ALU OP " & to_hstring(OP) & " Operand reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Dest reg=" & to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")" &
+--						" Result=" & to_hstring(ALU_RESULT);
 					REGS_INPUT <= T_REG(ALU_RESULT);
 					REGS_WRITE_INDEX <= RIGHT_INDEX;
 					REGS_WRITE <= '1';
@@ -309,8 +304,8 @@ begin
 					STATE <= S_FETCH1;
 
 			end case;
-			report "CPU: PC=" & to_hstring(PC_OUTPUT) & " Opcode=" & to_hstring(OPCODE) &
-				" STATE=" & T_STATE'image(STATE);
+--			report "CPU: PC=" & to_hstring(PC_OUTPUT) & " Opcode=" & to_hstring(OPCODE) &
+--				" STATE=" & T_STATE'image(STATE);
 		end if;
 	end process;
 end architecture;

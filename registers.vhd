@@ -1,4 +1,4 @@
-library IEEE;
+ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 
 package P_REGS is
@@ -39,10 +39,10 @@ begin
 			REGISTERS <= (others => DEFAULT_REG);
 		elsif (CLOCK'Event and CLOCK = '1') then
 			if (CLEAR = '1') then
-				report "CPU/Registers: Clearing reg " & to_hstring(WRITE_INDEX);
+--				report "CPU/Registers: Clearing reg " & to_hstring(WRITE_INDEX);
 				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <= DEFAULT_REG;
 			elsif (WRITE = '1') then
-				report "CPU/Registers: Writing " & to_hstring(INPUT) & " into reg " & to_hstring(WRITE_INDEX);
+--				report "CPU/Registers: Writing " & to_hstring(INPUT) & " into reg " & to_hstring(WRITE_INDEX);
 				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <= INPUT;
 			end if;
 		end if;
@@ -76,7 +76,7 @@ begin
 	process (RESET, CLOCK)
 	begin
 		if (RESET = '1') then
-			report "PC is reseting";
+--			report "PC is reseting";
 			PC <= DEFAULT_PC;
 		elsif (CLOCK'Event and CLOCK = '1') then
 			if (WRITE = '1') then

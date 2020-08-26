@@ -47,13 +47,13 @@ begin
 			report "Op=" & to_string(OP) & " Left=" & to_hstring(LEFT) &
 				" Right=" & to_hstring(RIGHT) & " Carry=" & to_string(CARRY_IN);
 
+			CLOCK <= '0';
 			ALU_DO_OP <= '0';
 			ALU_OP <= OP;
 			ALU_LEFT <= LEFT;
 			ALU_RIGHT <= RIGHT;
 			ALU_CARRY_IN <= CARRY_IN;
 
-			CLOCK <= '0';
 			wait for 1 ns;
 			CLOCK <= '1';
 			ALU_DO_OP <= '1';
@@ -93,16 +93,10 @@ begin
 		run_test(OP_INC,	x"0000", x"0000" ,'0',	x"0001", '0', '0', '0');
 		run_test(OP_INC,	x"0000", x"7fff" ,'0',	x"8000", '0', '0', '1');
 		run_test(OP_INC,	x"0000", x"ffff" ,'0',	x"0000", '1', '1', '0');
-		run_test(OP_INCD,	x"0000", x"0000" ,'0',	x"0002", '0', '0', '0');
-		run_test(OP_INCD,	x"0000", x"7fff" ,'0',	x"8001", '0', '0', '1');
-		run_test(OP_INCD,	x"0000", x"fffe" ,'0',	x"0000", '1', '1', '0');
 
 		run_test(OP_DEC,	x"0000", x"0000" ,'0',	x"ffff", '1', '0', '1');
 		run_test(OP_DEC,	x"0000", x"0001" ,'0',	x"0000", '0', '1', '0');
 		run_test(OP_DEC,	x"0000", x"ffff" ,'0',	x"fffe", '0', '0', '1');
-		run_test(OP_DECD,	x"0000", x"0000" ,'0',	x"fffe", '1', '0', '1');
-		run_test(OP_DECD,	x"0000", x"7fff" ,'0',	x"7ffd", '0', '0', '0');
-		run_test(OP_DECD,	x"0000", x"fffe" ,'0',	x"fffc", '0', '0', '1');
 
 		run_test(OP_AND,	x"8080", x"ff00", '0',	x"8000", '0', '0', '1');
 		run_test(OP_AND,	x"0880", x"ff00", '0',	x"0800", '0', '0', '0');
@@ -135,6 +129,16 @@ begin
 
 		run_test(OP_COPY,	x"f0f0", x"0000", '0',	x"f0f0", '0', '0', '1');
 		run_test(OP_COPY,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
+		run_test(OP_COPY,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
+
+		run_test(OP_NEG,	x"0000", x"0001", '0', x"ffff", '1', '0', '1');
+		run_test(OP_NEG,	x"0000", x"ffff", '0', x"0001", '1', '0', '0');
+		run_test(OP_NEG,	x"0000", x"0000", '0', x"0000", '0', '1', '0');
+
+		run_test(OP_COMP,	x"0001", x"0002", '0', x"0002", '0', '0', '0');
+		run_test(OP_COMP,	x"0002", x"0001", '0', x"0001", '1', '0', '1');
+		run_test(OP_COMP,	x"0001", x"0001", '0', x"0001", '0', '1', '0');
+		run_test(OP_COMP,	x"0000", x"8000", '0', x"8000", '0', '0', '1');
 
 		report "+++All good";
 		std.env.finish;

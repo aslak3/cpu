@@ -1,9 +1,11 @@
+VCOMFLAGS = -2008
+
 registers:
-	vcom registers.vhd tb/registers_tb.vhd
+	vcom $(VCOMFLAGS) registers.vhd tb/registers_tb.vhd
 alu:
-	vcom alu.vhd tb/alu_tb.vhd
+	vcom $(VCOMFLAGS) alu.vhd tb/alu_tb.vhd
 cpu:
-	vcom cpu.vhd tb/cpu_tb.vhd
+	vcom $(VCOMFLAGS) cpu.vhd tb/cpu_tb.vhd
 
 tests: registers_test alu_tests programcounter_tests cpu_tests
 

@@ -1,6 +1,6 @@
 # 16 bit processor in VHDL
 
-This is a project for learning, which is very much useless except for anyone interested in how a trivial processor could be implemented. That said, I think it's cool.
+This is a project for learning, which is pretty much useless except for anyone interested in how a trivial processor could be implemented. That said, I think it's cool.
 
 This is also a work in progress.
 
@@ -14,7 +14,8 @@ This is also a work in progress.
 * Load and store instructions operate either through a register or an immediate address
 * Clear instruction
 * Simple status bits: zero, negative, carry
-* ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right, copy
+* ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right,
+copy, negation, compare
 * ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST, where both are registers.
 * Conditional jumps: always, on each flag set and on each flag clear
 * Nop instruction
@@ -32,7 +33,6 @@ This is also a work in progress.
 * Wrap it in an FPGA and connect up peripherals and RAM/ROM
 * Eliminate empty states
 * Add more instructions!
-  - Compare
   - Bit test (non distructive and)
   - Relative addressing
   - ....
