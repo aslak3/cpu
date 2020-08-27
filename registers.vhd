@@ -63,7 +63,8 @@ entity programcounter is
 	port (
 		CLOCK : in STD_LOGIC;
 		RESET : in STD_LOGIC;
-		WRITE : in STD_LOGIC;
+		JUMP : in STD_LOGIC;
+		BRANCH : in STD_LOGIC;
 		INPUT : in T_REG;
 		INCREMENT : in STD_LOGIC;
 		OUTPUT : out T_REG
@@ -79,8 +80,10 @@ begin
 --			report "PC is reseting";
 			PC <= DEFAULT_PC;
 		elsif (CLOCK'Event and CLOCK = '1') then
-			if (WRITE = '1') then
+			if (JUMP = '1') then
 				PC <= INPUT;
+			elsif (BRANCH = '1') then
+				PC <= PC + INPUT;
 			else
 				PC <= PC + INCREMENT;
 			end if;

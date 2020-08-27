@@ -97,7 +97,8 @@ end entity;
 architecture behavioral of programcounter_tb is
 	signal CLOCK : STD_LOGIC;
 	signal RESET : STD_LOGIC;
-	signal PC_WRITE : STD_LOGIC := '0';
+	signal PC_JUMP : STD_LOGIC := '0';
+	signal PC_BRANCH : STD_LOGIC := '0';
 	signal PC_INPUT : T_REG;
 	signal PC_INCREMENT : STD_LOGIC := '0';
 	signal PC_OUTPUT : T_REG;
@@ -105,7 +106,8 @@ begin
 	dut: entity work.programcounter port map (
 		CLOCK => CLOCK,
 		RESET => RESET,
-		WRITE => PC_WRITE,
+		JUMP => PC_JUMP,
+		BRANCH => PC_BRANCH,
 		INPUT => PC_INPUT,
 		INCREMENT => PC_INCREMENT,
 		OUTPUT => PC_OUTPUT
@@ -136,18 +138,25 @@ begin
 		assert PC_OUTPUT = x"0001"
 			report "PC increment" severity failure;
 
-		PC_WRITE <= '1';
+		PC_JUMP <= '1';
 		PC_INPUT <= x"1234";
 		clock_delay;
-		PC_WRITE <= '0';
+		PC_JUMP <= '0';
 
 		assert PC_OUTPUT = x"1234"
 			report "PC jump" severity failure;
 
 		clock_delay;
 
-		assert PC_OUTPUT = x"1234"
-			report "PC same value" severity failure;
+		PC_BRANCH <= '1';
+		PC_INPUT <= x"ffff";
+		clock_delay;
+		PC_BRANCH <= '0';
+
+		assert PC_OUTPUT = x"1233"
+			report "PC branch" severity failure;
+
+		clock_delay;
 
 		report "+++All good";
 		std.env.finish;

@@ -7,16 +7,14 @@ package P_CPU is
 	constant OPCODE_NOP :		T_OPCODE := x"0000";
 
 	constant OPCODE_JUMP :		T_OPCODE := "00000000" & "00001---";
-	constant OPCODE_JUMPA :		T_OPCODE := "00000000" & "0000100-";
-	constant OPCODE_JUMPC :		T_OPCODE := "00000000" & "0000101-";
-	constant OPCODE_JUMPZ :		T_OPCODE := "00000000" & "0000110-";
-	constant OPCODE_JUMPN 	:	T_OPCODE := "00000000" & "0000111-";
+	constant OPCODE_BRANCH :	T_OPCODE := "00000000" & "00011---";
 
 	constant OPCODE_LOADI :		T_OPCODE := "00000000" & "00010---";
 	constant OPCODE_STOREI :	T_OPCODE := "00000000" & "00100---";
 	constant OPCODE_CLEAR :		T_OPCODE := "00000000" & "00110---";
 	constant OPCODE_LOADR :		T_OPCODE := "00000000" & "01------";
 	constant OPCODE_STORER :	T_OPCODE := "00000000" & "10------";
+
 	constant OPCODE_LED :		T_OPCODE := "00000000" & "1100000-";
 
 	constant OPCODE_ALU :		T_OPCODE := "0001----" & "00------";
@@ -31,7 +29,7 @@ package P_CPU is
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
 		S_JUMP1, S_JUMP_TAKEN1, S_JUMP_TAKEN2, S_JUMP_SKIP1,
-		S_LOADI1, S_LOADI2, S_STOREI1, S_STOREI2,
+		S_LOADI1, S_LOADI2, S_CLEAR1, S_STOREI1, S_STOREI2,
 		S_LOADR1, S_LOADR2, S_STORER1,
 		S_LED1,
 		S_ALU1, S_ALU2
@@ -85,7 +83,8 @@ architecture behavioural of cpu is
 	signal REGS_INPUT : T_REG  := (others => '0');
 
 	-- PC
-	signal PC_WRITE : STD_LOGIC := '0';
+	signal PC_JUMP : STD_LOGIC := '0';
+	signal PC_BRANCH : STD_LOGIC := '0';
 	signal PC_INPUT : T_REG := (others => '0');
 	signal PC_INCREMENT : STD_LOGIC := '0';
 	signal PC_OUTPUT : T_REG := (others => '0');
@@ -119,7 +118,8 @@ begin
 	programcounter: entity work.programcounter port map (
 		CLOCK => CLOCK,
 		RESET => RESET,
-		WRITE => PC_WRITE,
+		JUMP => PC_JUMP,
+		BRANCH => PC_BRANCH,
 		INPUT => PC_INPUT,
 		INCREMENT => PC_INCREMENT,
 		OUTPUT => PC_OUTPUT
@@ -131,7 +131,8 @@ begin
 			STATE <= S_FETCH1;
 			ALU_CARRY_IN <= '0';
 			OPCODE <= OPCODE_NOP;
-			PC_WRITE <= '0';
+			PC_JUMP <= '0';
+			PC_BRANCH <= '0';
 			PC_INCREMENT <= '0';
 			REGS_CLEAR <= '0';
 			REGS_WRITE <= '0';
@@ -142,7 +143,8 @@ begin
 		elsif (CLOCK'Event and CLOCK = '1') then
 			READ <= '0';
 			WRITE <= '0';
-			PC_WRITE <= '0';
+			PC_JUMP <= '0';
+			PC_BRANCH <= '0';
 			PC_INCREMENT <= '0';
 			REGS_CLEAR <= '0';
 			REGS_WRITE <= '0';
@@ -162,21 +164,17 @@ begin
 						when OPCODE_NOP =>
 							STATE <= S_FETCH1;
 
-						when OPCODE_JUMP =>
+						when OPCODE_JUMP | OPCODE_BRANCH =>
 							STATE <= S_JUMP1;
 
 						when OPCODE_LOADI =>
 							STATE <= S_LOADI1;
 
 						when OPCODE_STOREI =>
-							ADDRESS <= PC_OUTPUT;
-							READ <= '1';
 							STATE <= S_STOREI1;
 
 						when OPCODE_CLEAR =>
-							REGS_WRITE_INDEX <= RIGHT_INDEX;
-							REGS_CLEAR <= '1';
-							STATE <= S_FETCH1;
+							STATE <= S_CLEAR1;
 
 						when OPCODE_LOADR =>
 							STATE <= S_LOADR1;
@@ -218,6 +216,11 @@ begin
 					ADDRESS <= DATA_IN;
 					DATA_OUT <= STD_LOGIC_VECTOR(RIGHT);
 					WRITE <= '1';
+					STATE <= S_FETCH1;
+
+				when S_CLEAR1 =>
+					REGS_WRITE_INDEX <= RIGHT_INDEX;
+					REGS_CLEAR <= '1';
 					STATE <= S_FETCH1;
 
 				when S_LOADR1 =>
@@ -282,7 +285,11 @@ begin
 
 				when S_JUMP_TAKEN1 =>
 					PC_INPUT <= T_REG(DATA_IN);
-					PC_WRITE <= '1';
+					if (OPCODE (15 downto 3) = OPCODE_JUMP (15 downto 3)) then
+						PC_JUMP <= '1';
+					else
+						PC_BRANCH <= '1';
+					end if;
 					STATE <= S_JUMP_TAKEN2;
 
 				when S_JUMP_TAKEN2 =>
