@@ -159,7 +159,9 @@ begin
 
 				when S_FETCH2 =>
 					OPCODE <= T_OPCODE(DATA_IN);
---					report "CPU: Reading opcode " & to_hstring(OPCODE) & " from " & to_hstring(PC_OUTPUT);
+--pragma synthesis_off
+					report "CPU: Reading opcode " & to_hstring(OPCODE) & " from " & to_hstring(PC_OUTPUT);
+--pragma synthesis_on
 					case? DATA_IN is
 						when OPCODE_NOP =>
 							STATE <= S_FETCH1;
@@ -190,7 +192,9 @@ begin
 							STATE <= S_ALU1;
 
 						when others =>
---							report "CPU: No opcode match!";
+--pragma synthesis_off
+							report "CPU: No opcode match!";
+--pragma synthesis_on
 							STATE <= S_FETCH1;
 					end case?;
 
@@ -235,9 +239,11 @@ begin
 					STATE <= S_FETCH1;
 
 				when S_STORER1 =>
---					report "CPU: STORER Address reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Data reg=" &
---						to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")";
-					ADDRESS <= STD_LOGIC_VECTOR(LEFT);
+--pragma synthesis_off
+					report "CPU: STORER Address reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Data reg=" &
+						to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")";
+--pragma synthesis_on
+						ADDRESS <= STD_LOGIC_VECTOR(LEFT);
 					DATA_OUT <= STD_LOGIC_VECTOR(RIGHT);
 					WRITE <= '1';
 					STATE <= S_FETCH1;
@@ -249,8 +255,9 @@ begin
 				when S_JUMP1 =>
 					ADDRESS <= PC_OUTPUT;
 					READ <= '1';
---					report "CPU: Jumping condition=" & to_string(JUMPTYPE) & " Polarity=" & STD_LOGIC'image(JUMP_POLARITY);
-
+--pragma synthesis_off
+					report "CPU: Jumping/Branching condition=" & to_string(JUMPTYPE) & " Polarity=" & STD_LOGIC'image(JUMP_POLARITY);
+--pragma synthesis_on
 					case JUMPTYPE is
 						when JUMPTYPE_ALWAYS =>
 							STATE <= S_JUMP_TAKEN1;
@@ -302,17 +309,21 @@ begin
 					STATE <= S_ALU2;
 
 				when S_ALU2 =>
---					report "CPU: ALU OP " & to_hstring(OP) & " Operand reg=" & to_hstring(LEFT_INDEX) & " (" & to_hstring(LEFT) & ") Dest reg=" & to_hstring(RIGHT_INDEX) & " (" & to_hstring(RIGHT) & ")" &
---						" Result=" & to_hstring(ALU_RESULT);
+--pragma synthesis_off
+					report "CPU: ALU OP " & to_hstring(OP) & " Operand reg=" & to_hstring(LEFT_INDEX) &
+						" (" & to_hstring(LEFT) & ") Dest reg=" & to_hstring(RIGHT_INDEX) &
+						" (" & to_hstring(RIGHT) & ")" & " Result=" & to_hstring(ALU_RESULT);
+--pragma synthesis_on
 					REGS_INPUT <= T_REG(ALU_RESULT);
 					REGS_WRITE_INDEX <= RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					ALU_CARRY_IN <= ALU_CARRY_OUT;
 					STATE <= S_FETCH1;
 
-			end case;
---			report "CPU: PC=" & to_hstring(PC_OUTPUT) & " Opcode=" & to_hstring(OPCODE) &
---				" STATE=" & T_STATE'image(STATE);
-		end if;
+				end case;
+--pragma synthesis_off
+				report "CPU: PC=" & to_hstring(PC_OUTPUT) & " Opcode=" & to_hstring(OPCODE) & " STATE=" & T_STATE'image(STATE);
+--pragma synthesis_on
+			end if;
 	end process;
 end architecture;
