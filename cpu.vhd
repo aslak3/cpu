@@ -19,16 +19,16 @@ package P_CPU is
 
 	constant OPCODE_ALU :		T_OPCODE := "0001----" & "00------";
 
-	subtype T_JUMPTYPE is STD_LOGIC_VECTOR (1 downto 0);
+	subtype T_FLOWTYPE is STD_LOGIC_VECTOR (1 downto 0);
 
-	constant JUMPTYPE_ALWAYS :	T_JUMPTYPE := "00";
-	constant JUMPTYPE_CARRY :	T_JUMPTYPE := "01";
-	constant JUMPTYPE_ZERO :	T_JUMPTYPE := "10";
-	constant JUMPTYPE_NEG :		T_JUMPTYPE := "11";
+	constant FLOWTYPE_ALWAYS :	T_FLOWTYPE := "00";
+	constant FLOWTYPE_CARRY :	T_FLOWTYPE := "01";
+	constant FLOWTYPE_ZERO :	T_FLOWTYPE := "10";
+	constant FLOWTYPE_NEG :		T_FLOWTYPE := "11";
 
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
-		S_JUMP1, S_JUMP_TAKEN1, S_JUMP_TAKEN2, S_JUMP_SKIP1,
+		S_FLOW1, S_FLOW_TAKEN1, S_FLOW_TAKEN2, S_FLOW_SKIP1,
 		S_LOADI1, S_LOADI2, S_CLEAR1, S_STOREI1, S_STOREI2,
 		S_LOADR1, S_LOADR2, S_STORER1,
 		S_LED1,
@@ -64,8 +64,8 @@ architecture behavioural of cpu is
 	alias OP : T_ALU_OP is OPCODE (11 downto 8);
 	alias LEFT_INDEX : T_REG_INDEX is OPCODE (5 downto 3);
 	alias RIGHT_INDEX : T_REG_INDEX is OPCODE (2 downto 0);
-	alias JUMPTYPE : T_JUMPTYPE is OPCODE (2 downto 1);
-	alias JUMP_POLARITY : STD_LOGIC is OPCODE (0);
+	alias FLOWTYPE : T_FLOWTYPE is OPCODE (2 downto 1);
+	alias FLOW_POLARITY : STD_LOGIC is OPCODE (0);
 	signal STATE : T_STATE := S_FETCH1;
 
 	-- ALU
@@ -167,7 +167,7 @@ begin
 							STATE <= S_FETCH1;
 
 						when OPCODE_JUMP | OPCODE_BRANCH =>
-							STATE <= S_JUMP1;
+							STATE <= S_FLOW1;
 
 						when OPCODE_LOADI =>
 							STATE <= S_LOADI1;
@@ -252,57 +252,57 @@ begin
 					LED <= OPCODE(0);
 					STATE <= S_FETCH1;
 
-				when S_JUMP1 =>
+				when S_FLOW1 =>
 					ADDRESS <= PC_OUTPUT;
 					READ <= '1';
 --pragma synthesis_off
-					report "CPU: Jumping/Branching condition=" & to_string(JUMPTYPE) & " Polarity=" & STD_LOGIC'image(JUMP_POLARITY);
+					report "CPU: Jumping/Branching condition=" & to_string(FLOWTYPE) & " Polarity=" & STD_LOGIC'image(FLOW_POLARITY);
 --pragma synthesis_on
-					case JUMPTYPE is
-						when JUMPTYPE_ALWAYS =>
-							STATE <= S_JUMP_TAKEN1;
+					case FLOWTYPE is
+						when FLOWTYPE_ALWAYS =>
+							STATE <= S_FLOW_TAKEN1;
 
-						when JUMPTYPE_CARRY =>
-							if (ALU_CARRY_OUT = JUMP_POLARITY) then
-								STATE <= S_JUMP_TAKEN1;
+						when FLOWTYPE_CARRY =>
+							if (ALU_CARRY_OUT = FLOW_POLARITY) then
+								STATE <= S_FLOW_TAKEN1;
 							else
 								PC_INCREMENT <= '1';
-								STATE <= S_JUMP_SKIP1;
+								STATE <= S_FLOW_SKIP1;
 							end if;
 
-						when JUMPTYPE_ZERO =>
-							if (ALU_ZERO_OUT = JUMP_POLARITY) then
-								STATE <= S_JUMP_TAKEN1;
+						when FLOWTYPE_ZERO =>
+							if (ALU_ZERO_OUT = FLOW_POLARITY) then
+								STATE <= S_FLOW_TAKEN1;
 							else
 								PC_INCREMENT <= '1';
-								STATE <= S_JUMP_SKIP1;
+								STATE <= S_FLOW_SKIP1;
 							end if;
 
-						when JUMPTYPE_NEG =>
-							if (ALU_NEG_OUT = JUMP_POLARITY) then
-								STATE <= S_JUMP_TAKEN1;
+						when FLOWTYPE_NEG =>
+							if (ALU_NEG_OUT = FLOW_POLARITY) then
+								STATE <= S_FLOW_TAKEN1;
 							else
 								PC_INCREMENT <= '1';
-								STATE <= S_JUMP_SKIP1;
+								STATE <= S_FLOW_SKIP1;
 							end if;
 
 						when others =>
 							STATE <= S_FETCH1;
 					end case;
 
-				when S_JUMP_TAKEN1 =>
+				when S_FLOW_TAKEN1 =>
 					PC_INPUT <= T_REG(DATA_IN);
 					if (OPCODE (15 downto 3) = OPCODE_JUMP (15 downto 3)) then
 						PC_JUMP <= '1';
 					else
 						PC_BRANCH <= '1';
 					end if;
-					STATE <= S_JUMP_TAKEN2;
+					STATE <= S_FLOW_TAKEN2;
 
-				when S_JUMP_TAKEN2 =>
+				when S_FLOW_TAKEN2 =>
 					STATE <= S_FETCH1;
 
-				when S_JUMP_SKIP1 =>
+				when S_FLOW_SKIP1 =>
 					STATE <= S_FETCH1;
 
 				when S_ALU1 =>
