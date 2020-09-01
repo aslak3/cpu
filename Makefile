@@ -4,8 +4,10 @@ registers:
 	vcom $(VCOMFLAGS) registers.vhd tb/registers_tb.vhd
 alu:
 	vcom $(VCOMFLAGS) alu.vhd tb/alu_tb.vhd
+control:
+	vcom $(VCOMFLAGS) control.vhd
 cpu:
-	vcom $(VCOMFLAGS) control.vhd cpu.vhd tb/cpu_tb.vhd
+	vcom $(VCOMFLAGS) cpu.vhd tb/cpu_tb.vhd
 
 tests: registers_test alu_tests programcounter_tests cpu_tests
 
