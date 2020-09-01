@@ -42,9 +42,10 @@ entity alu is
 end entity;
 
 architecture behavioural of alu is
-	signal TEMP_LEFT  : STD_LOGIC_VECTOR (16 downto 0);
-	signal TEMP_RIGHT : STD_LOGIC_VECTOR (16 downto 0);
+	signal TEMP_LEFT  : STD_LOGIC_VECTOR (16 downto 0) := (others => '0');
+	signal TEMP_RIGHT : STD_LOGIC_VECTOR (16 downto 0) := (others => '0');
 	signal TEMP_RESUlT : STD_LOGIC_VECTOR (16 downto 0) := (others => '0');
+	signal GIVE_RESULT : STD_LOGIC := '0';
 begin
 	TEMP_LEFT <= '0' & LEFT (15 downto 0);
 	TEMP_RIGHT <= '0' & RIGHT (15 downto 0);
@@ -53,6 +54,7 @@ begin
     begin
 		if (CLOCK'Event and CLOCK = '1') then
 			if (DO_OP = '1') then
+				GIVE_RESULT <= '1';
 				case OP is
 					when OP_ADD =>
 						TEMP_RESULT <= TEMP_RIGHT + TEMP_LEFT;
@@ -84,6 +86,7 @@ begin
 						TEMP_RESULT <= not TEMP_RIGHT + 1;
 					when OP_COMP =>
 						TEMP_RESULT <= TEMP_RIGHT - TEMP_LEFT;
+						GIVE_RESULT <= '0';
 					when others =>
 						TEMP_RESULT <= (others => '0');
 				end case;
@@ -91,9 +94,9 @@ begin
 		end if;
 	end process;
 
-	RESULT <= TEMP_RESULT (15 downto 0) when OP /= OP_COMP else
+	RESULT <= TEMP_RESULT (15 downto 0) when GIVE_RESULT = '1' else
 		RIGHT;
 	CARRY_OUT <= TEMP_RESULT (16);
-	ZERO_OUT <= '1' when (TEMP_RESULT (15 downto 0) = x"00") else '0';
+	ZERO_OUT <= '1' when (TEMP_RESULT (15 downto 0) = x"0000") else '0';
 	NEG_OUT <= TEMP_RESULT (15);
 end architecture;

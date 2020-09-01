@@ -6,16 +6,16 @@ entity registers_tb is
 end entity;
 
 architecture behavioral of registers_tb is
-	signal CLOCK : STD_LOGIC;
-	signal RESET : STD_LOGIC;
+	signal CLOCK : STD_LOGIC := '0';
+	signal RESET : STD_LOGIC := '0';
 	signal REGS_CLEAR : STD_LOGIC := '0';
 	signal REGS_WRITE : STD_LOGIC := '0';
-	signal REGS_READ_LEFT_INDEX : T_REG_INDEX;
-	signal REGS_READ_RIGHT_INDEX : T_REG_INDEX;
-	signal REGS_WRITE_INDEX : T_REG_INDEX;
+	signal REGS_READ_LEFT_INDEX : T_REG_INDEX := (others => '0');
+	signal REGS_READ_RIGHT_INDEX : T_REG_INDEX := (others => '0');
+	signal REGS_WRITE_INDEX : T_REG_INDEX := (others => '0');
 	signal REGS_LEFT_OUTPUT : T_REG;
 	signal REGS_RIGHT_OUTPUT : T_REG;
-	signal REGS_INPUT : T_REG;
+	signal REGS_INPUT : T_REG := (others => '0');
 begin
 	dut: entity work.registers port map (
 		CLOCK => CLOCK,
@@ -45,7 +45,6 @@ begin
 
 		REGS_READ_LEFT_INDEX <= "000";
 		REGS_READ_RIGHT_INDEX <= "001";
-		REGS_WRITE <= '0';
 
 		clock_delay;
 
@@ -99,7 +98,7 @@ architecture behavioral of programcounter_tb is
 	signal RESET : STD_LOGIC;
 	signal PC_JUMP : STD_LOGIC := '0';
 	signal PC_BRANCH : STD_LOGIC := '0';
-	signal PC_INPUT : T_REG;
+	signal PC_INPUT : T_REG := (others => '0');
 	signal PC_INCREMENT : STD_LOGIC := '0';
 	signal PC_OUTPUT : T_REG;
 begin

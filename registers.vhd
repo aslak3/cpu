@@ -95,7 +95,9 @@ begin
 				PC <= PC + INPUT;
 			else
 --pragma synthesis_off
-				report "CPU/PC is incrementing";
+				if (INCREMENT = '1') then
+					report "CPU/PC incrementing";
+				end if;
 --pragma synthesis_on
 				PC <= PC + INCREMENT;
 			end if;
