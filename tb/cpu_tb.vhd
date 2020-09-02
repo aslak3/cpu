@@ -3,7 +3,7 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 use STD.textio.all;
 use IEEE.std_logic_textio.all;
-use work.P_CPU.all;
+use work.P_CONTROL.all;
 
 entity cpu_tb is
 end entity;
@@ -16,26 +16,26 @@ architecture behavioral of cpu_tb is
 	signal CPU_DATA_OUT : STD_LOGIC_VECTOR (15 downto 0);
 	signal CPU_READ : STD_LOGIC;
 	signal CPU_WRITE : STD_LOGIC;
-	type MEM is ARRAY (0 to 31) of T_OPCODE;
+	type MEM is ARRAY (0 to 31) of STD_LOGIC_VECTOR (15 downto 0);
 	signal RAM : MEM := (
 x"3000",
 x"2001",
 x"0001",
 x"2003",
-x"0011",
+x"0012",
 x"2004",
 x"000E",
 x"3B0A",
 x"3801",
 x"3B10",
 x"2C19",
-x"3903",
+x"3C03",
+x"0001",
 x"3944",
 x"1C90",
-x"FFF9",
+x"FFF8",
 x"1800",
 x"FFFF",
-		x"0000",  -- 14: NOP
 		x"0000",  -- 14: NOP
 		x"0000",  -- 14: NOP
 		x"0000",  -- 14: NOP
@@ -63,12 +63,14 @@ begin
 		WRITE => CPU_WRITE
 	);
 
-	process (CPU_WRITE, CPU_ADDRESS)
+	process (CPU_WRITE, CPU_READ, CPU_ADDRESS)
 	begin
 		if (CPU_WRITE = '1') then
 			RAM(to_integer(unsigned(CPU_ADDRESS))) <= CPU_DATA_OUT;
 		end if;
-		CPU_DATA_IN <= RAM(to_integer(unsigned(CPU_ADDRESS)));
+		if (CPU_READ = '1') then
+			CPU_DATA_IN <= RAM(to_integer(unsigned(CPU_ADDRESS)));
+		end if;
 	end process;
 
 	process

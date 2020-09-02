@@ -34,6 +34,7 @@ package P_CONTROL is
 	constant OPCODE_CLEAR :		T_OPCODE := "001100";
 
 	constant OPCODE_ALU :		T_OPCODE := "001110";
+	constant OPCODE_ALUI :		T_OPCODE := "001111";
 
 	subtype T_FLOWTYPE is STD_LOGIC_VECTOR (2 downto 0);
 
@@ -43,11 +44,17 @@ package P_CONTROL is
 
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
-		S_FLOW1, S_FLOW_TAKEN1, S_FLOW_TAKEN2, S_FLOW_SKIP1,
-		S_LOADI1, S_LOADI2, S_CLEAR1, S_STOREI1, S_STOREI2,
+		S_FLOW1,
+		S_LOADI1, S_CLEAR1, S_STOREI1, S_STOREI2,
 		S_LOADR1, S_LOADR2, S_STORER1,
-		S_ALU1, S_ALU2
+		S_ALU1,
+		S_ALUI1, S_ALUI2
 	);
+
+	type T_ALU_LEFT_MUX_SEL is ( S_REGS_LEFT, S_DATA_IN );
+	type T_REGS_INPUT_MUX_SEL is ( S_ALU_RESULT, S_DATA_IN, S_REGS_RIGHT );
+	type T_ADDRESS_MUX_SEL is ( S_PC, S_REGS_LEFT, S_DATA_IN );
+
 end package;
 
 library IEEE;
@@ -62,16 +69,17 @@ entity control is
 	port (
 		CLOCK : in STD_LOGIC;
 		RESET : in STD_LOGIC;
-		ADDRESS : out STD_LOGIC_VECTOR (15 downto 0);
 		DATA_IN : in STD_LOGIC_VECTOR (15 downto 0);
-		DATA_OUT : out STD_LOGIC_VECTOR (15 downto 0);
 		READ : out STD_LOGIC;
 		WRITE : out STD_LOGIC;
+
+		ALU_LEFT_MUX_SEL : out T_ALU_LEFT_MUX_SEL;
+		REGS_INPUT_MUX_SEL : out T_REGS_INPUT_MUX_SEL;
+		ADDRESS_MUX_SEL : out T_ADDRESS_MUX_SEL;
 
 		ALU_DO_OP : out STD_LOGIC;
 		ALU_OP : out T_ALU_OP;
 		ALU_CARRY_IN : out STD_LOGIC;
-		ALU_RESULT : in STD_LOGIC_VECTOR (15 downto 0);
 		ALU_CARRY_OUT : in STD_LOGIC;
 		ALU_ZERO_OUT : in STD_LOGIC;
 		ALU_NEG_OUT : in STD_LOGIC;
@@ -81,35 +89,34 @@ entity control is
 		REGS_WRITE_INDEX : out T_REG_INDEX;
 		REGS_LEFT_INDEX : out T_REG_INDEX;
 		REGS_RIGHT_INDEX : out T_REG_INDEX;
-		REGS_LEFT_OUTPUT : in T_REG;
-		REGS_RIGHT_OUTPUT : in T_REG;
-		REGS_INPUT : out T_REG;
 
 		PC_JUMP : out STD_LOGIC;
 		PC_BRANCH : out STD_LOGIC;
-		PC_INPUT : out T_REG;
-		PC_INCREMENT : out STD_LOGIC;
-		PC_OUTPUT : in T_REG
+		PC_INCREMENT : out STD_LOGIC
 	);
 end entity;
 
 architecture behavioural of control is
+	signal INSTRUCTION : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+
+	alias OPCODE : T_OPCODE is INSTRUCTION (15 downto 10);
+
+	alias FLOW_FLAGS : T_FLOWTYPE is INSTRUCTION (8 downto 6);
+	alias FLOW_CARES : T_FLOWTYPE is INSTRUCTION (5 downto 3);
+	alias FLOW_POLARITY : T_FLOWTYPE is INSTRUCTION (2 downto 0);
+
 begin
+	REGS_LEFT_INDEX <= INSTRUCTION (5 downto 3);
+	REGS_RIGHT_INDEX <= INSTRUCTION (2 downto 0);
+	ALU_OP <= INSTRUCTION (9 downto 6);
+
 	process (RESET, CLOCK)
 		variable STATE : T_STATE := S_FETCH1;
-		variable INSTRUCTION : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
-
-		alias OPCODE : T_OPCODE is INSTRUCTION (15 downto 10);
-
-		alias FLOW_FLAGS : T_FLOWTYPE is INSTRUCTION (8 downto 6);
-		alias FLOW_CARES : T_FLOWTYPE is INSTRUCTION (5 downto 3);
-		alias FLOW_POLARITY : T_FLOWTYPE is INSTRUCTION (2 downto 0);
-
 	begin
 		if (RESET = '1') then
 			STATE := S_FETCH1;
-			INSTRUCTION := (others => '0');
 
+			INSTRUCTION <= (others => '0');
 			ALU_CARRY_IN <= '0';
 			PC_JUMP <= '0';
 			PC_BRANCH <= '0';
@@ -119,7 +126,6 @@ begin
 			ALU_DO_OP <= '0';
 			READ <= '0';
 			WRITE <= '0';
-			ADDRESS <= PC_OUTPUT;
 		elsif (CLOCK'Event and CLOCK = '1') then
 			READ <= '0';
 			WRITE <= '0';
@@ -132,20 +138,17 @@ begin
 
 			case STATE is
 				when S_FETCH1 =>
-					ADDRESS <= PC_OUTPUT;
+					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
 					PC_INCREMENT <= '1';
 					STATE := S_FETCH2;
 
 				when S_FETCH2 =>
-					INSTRUCTION := DATA_IN;
-					REGS_LEFT_INDEX <= INSTRUCTION (5 downto 3);
-					REGS_RIGHT_INDEX <= INSTRUCTION (2 downto 0);
-
+					INSTRUCTION <= DATA_IN;
 --pragma synthesis_off
-					report "CPU: Reading opcode " & to_string(OPCODE) & " from " & to_hstring(PC_OUTPUT);
+					report "Control: Reading opcode " & to_string(INSTRUCTION (15 downto 10)) & " from " & T_ADDRESS_MUX_SEL'Image(ADDRESS_MUX_SEL);
 --pragma synthesis_on
-					case OPCODE is
+					case DATA_IN (15 downto 10) is
 						when OPCODE_NOP =>
 							STATE := S_FETCH1;
 
@@ -165,41 +168,41 @@ begin
 							STATE := S_LOADR1;
 
 						when OPCODE_STORER =>
+							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							STATE := S_STORER1;
 
 						when OPCODE_ALU =>
+							ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
 							ALU_DO_OP <= '1';
-							ALU_OP <= DATA_IN (9 downto 6);
 							STATE := S_ALU1;
+
+						when OPCODE_ALUI =>
+							STATE := S_ALUI1;
 
 						when others =>
 --pragma synthesis_off
-							report "CPU: No opcode match!";
+							report "Control: No opcode match!";
 --pragma synthesis_on
 							STATE := S_FETCH1;
 					end case;
 
 				when S_LOADI1 =>
-					ADDRESS <= PC_OUTPUT;
+					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
 					PC_INCREMENT <= '1';
-					STATE := S_LOADI2;
-
-				when S_LOADI2 =>
-					REGS_INPUT <= T_REG(DATA_IN);
+					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
 				when S_STOREI1 =>
-					ADDRESS <= PC_OUTPUT;
+					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
 					PC_INCREMENT <= '1';
 					STATE := S_STOREI2;
 
 				when S_STOREI2 =>
-					ADDRESS <= DATA_IN;
-					DATA_OUT <= STD_LOGIC_VECTOR(REGS_RIGHT_OUTPUT);
+					ADDRESS_MUX_SEL <= S_DATA_IN;
 					WRITE <= '1';
 					STATE := S_FETCH1;
 
@@ -209,72 +212,77 @@ begin
 					STATE := S_FETCH1;
 
 				when S_LOADR1 =>
-					ADDRESS <= REGS_LEFT_OUTPUT;
+					ADDRESS_MUX_SEL <= S_REGS_LEFT;
 					READ <= '1';
 					STATE := S_LOADR2;
 
 				when S_LOADR2 =>
-					REGS_INPUT <= T_REG(DATA_IN);
+					REGS_INPUT_MUX_SEL <= S_REGS_RIGHT;
 					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
 				when S_STORER1 =>
 --pragma synthesis_off
-					report "CPU: STORER Address reg=" & to_hstring(REGS_LEFT_INDEX) & " (" & to_hstring(REGS_LEFT_OUTPUT) & ") Data reg=" &
-						to_hstring(REGS_RIGHT_INDEX) & " (" & to_hstring(REGS_RIGHT_OUTPUT) & ")";
+					report "Control: STORER Address reg=" & to_hstring(REGS_LEFT_INDEX) & " Data reg=" &
+						to_hstring(REGS_RIGHT_INDEX);
 --pragma synthesis_on
-					ADDRESS <= STD_LOGIC_VECTOR(REGS_LEFT_OUTPUT);
-					DATA_OUT <= STD_LOGIC_VECTOR(REGS_RIGHT_OUTPUT);
 					WRITE <= '1';
 					STATE := S_FETCH1;
 
 				when S_FLOW1 =>
-					ADDRESS <= PC_OUTPUT;
+					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
 --pragma synthesis_off
-					report "CPU: Jumping/Branching condition=" & to_string(FLOW_FLAGS) & " Cares=" & to_string(FLOW_CARES) & " Polarity=" & to_string(FLOW_POLARITY);
+					report "Control: Jumping/Branching condition=" & to_string(FLOW_FLAGS) & " Cares=" & to_string(FLOW_CARES) & " Polarity=" & to_string(FLOW_POLARITY);
 --pragma synthesis_on
-					if (OPCODE = OPCODE_JUMPA or OPCODE = OPCODE_BRANCHA) then
-						STATE := S_FLOW_TAKEN1;
-					else
-						if (
-							( ( FLOW_FLAGS(FLOWTYPE_CARRY) = '1' and FLOW_POLARITY(FLOWTYPE_CARRY) = ALU_CARRY_OUT ) or FLOW_CARES(FLOWTYPE_CARRY) = '0' ) and
-							( ( FLOW_FLAGS(FLOWTYPE_ZERO) = '1' and FLOW_POLARITY(FLOWTYPE_ZERO) = ALU_ZERO_OUT ) or FLOW_CARES(FLOWTYPE_ZERO) = '0' ) and
-							( ( FLOW_FLAGS(FLOWTYPE_NEG) = '1' and FLOW_POLARITY(FLOWTYPE_NEG) = ALU_NEG_OUT ) or FLOW_CARES(FLOWTYPE_NEG ) = '0' )
-						) then
-							STATE := S_FLOW_TAKEN1;
+					if (
+						( OPCODE = OPCODE_JUMPA or OPCODE = OPCODE_BRANCHA ) or
+						(
+						( ( FLOW_FLAGS(FLOWTYPE_CARRY) = '1' and FLOW_POLARITY(FLOWTYPE_CARRY) = ALU_CARRY_OUT ) or FLOW_CARES(FLOWTYPE_CARRY) = '0' ) and
+						( ( FLOW_FLAGS(FLOWTYPE_ZERO) = '1' and FLOW_POLARITY(FLOWTYPE_ZERO) = ALU_ZERO_OUT ) or FLOW_CARES(FLOWTYPE_ZERO) = '0' ) and
+						( ( FLOW_FLAGS(FLOWTYPE_NEG) = '1' and FLOW_POLARITY(FLOWTYPE_NEG) = ALU_NEG_OUT ) or FLOW_CARES(FLOWTYPE_NEG ) = '0' )
+						)
+					) then
+						report "Control: Jump/Branch taken";
+						if (OPCODE = OPCODE_JUMPA or OPCODE = OPCODE_JUMPC) then
+							PC_JUMP <= '1';
 						else
-							PC_INCREMENT <= '1';
-							STATE := S_FLOW_SKIP1;
+							PC_BRANCH <= '1';
 						end if;
-					end if;
-
-				when S_FLOW_TAKEN1 =>
-					PC_INPUT <= T_REG(DATA_IN);
-					if (OPCODE = OPCODE_JUMPA or OPCODE = OPCODE_JUMPC) then
-						PC_JUMP <= '1';
 					else
-						PC_BRANCH <= '1';
+						report "Control: Jump/Branch NOT taken";
+						PC_INCREMENT <= '1';
 					end if;
-					STATE := S_FLOW_TAKEN2;
-
-				when S_FLOW_TAKEN2 =>
-					STATE := S_FETCH1;
-
-				when S_FLOW_SKIP1 =>
 					STATE := S_FETCH1;
 
 				when S_ALU1 =>
-					STATE := S_ALU2;
-
-				when S_ALU2 =>
 --pragma synthesis_off
-					report "CPU: ALU OP " & to_hstring(ALU_OP) & " Operand reg=" & to_hstring(REGS_LEFT_INDEX) &
-						" (" & to_hstring(REGS_LEFT_OUTPUT) & ") Dest reg=" & to_hstring(REGS_RIGHT_INDEX) &
-						" (" & to_hstring(REGS_RIGHT_OUTPUT) & ")" & " Result=" & to_hstring(ALU_RESULT);
+					report "Control: ALU OP " & to_hstring(ALU_OP) & " Operand reg=" & to_hstring(REGS_LEFT_INDEX) &
+						" Dest reg=" & to_hstring(REGS_RIGHT_INDEX) &
+						" Regs Input Mux Sel=" & T_REGS_INPUT_MUX_SEL'Image(REGS_INPUT_MUX_SEL);
 --pragma synthesis_on
-					REGS_INPUT <= T_REG(ALU_RESULT);
+					REGS_INPUT_MUX_SEL <= S_ALU_RESULT;
+					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
+					REGS_WRITE <= '1';
+					ALU_CARRY_IN <= ALU_CARRY_OUT;
+					STATE := S_FETCH1;
+
+				when S_ALUI1 =>
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
+					ALU_LEFT_MUX_SEL <= S_DATA_IN;
+					ALU_DO_OP <= '1';
+					PC_INCREMENT <= '1';
+					STATE := S_ALUI2;
+
+				when S_ALUI2 =>
+--pragma synthesis_off
+					report "Control: ALU Immediate OP " & to_hstring(ALU_OP) & " Operand=" &
+						to_hstring(DATA_IN) & " Dest reg=" & to_hstring(REGS_RIGHT_INDEX) &
+						" Regs Input Mux Sel=" & T_REGS_INPUT_MUX_SEL'Image(REGS_INPUT_MUX_SEL);
+--pragma synthesis_on
+					REGS_INPUT_MUX_SEL <= S_ALU_RESULT;
 					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					ALU_CARRY_IN <= ALU_CARRY_OUT;
@@ -282,7 +290,7 @@ begin
 
 				end case;
 --pragma synthesis_off
-				report "CPU: PC=" & to_hstring(PC_OUTPUT) & " Opcode=" & to_string(OPCODE) & " Params=" & to_string(INSTRUCTION (9 downto 0)) & " STATE=" & T_STATE'image(STATE);
+				report "Control: Opcode=" & to_string(OPCODE) & " Params=" & to_string(INSTRUCTION (9 downto 0)) & " STATE=" & T_STATE'image(STATE);
 --pragma synthesis_on
 			end if;
 	end process;
