@@ -40,12 +40,12 @@ begin
 		elsif (CLOCK'Event and CLOCK = '1') then
 			if (CLEAR = '1') then
 --pragma synthesis_off
-				report "CPU/Registers: Clearing reg " & to_hstring(WRITE_INDEX);
+				report "Registers: Clearing reg " & to_hstring(WRITE_INDEX);
 --pragma synthesis_on
 				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <= DEFAULT_REG;
 			elsif (WRITE = '1') then
 --pragma synthesis_off
-				report "CPU/Registers: Writing " & to_hstring(INPUT) & " into reg " & to_hstring(WRITE_INDEX);
+				report "Registers: Writing " & to_hstring(INPUT) & " into reg " & to_hstring(WRITE_INDEX);
 --pragma synthesis_on
 				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <= INPUT;
 			end if;
@@ -85,18 +85,18 @@ begin
 		elsif (CLOCK'Event and CLOCK = '1') then
 			if (JUMP = '1') then
 --pragma synthesis_off
-				report "CPU/PC is jumping to " & to_hstring(INPUT);
+				report "PC: jumping to " & to_hstring(INPUT);
 --pragma synthesis_on
 				PC <= INPUT;
 			elsif (BRANCH = '1') then
 --pragma synthesis_off
-				report "CPU/PC is branching + " & to_hstring(INPUT);
+				report "PC: branching + " & to_hstring(INPUT);
 --pragma synthesis_on
 				PC <= PC + INPUT;
 			else
 --pragma synthesis_off
 				if (INCREMENT = '1') then
-					report "CPU/PC incrementing";
+					report "PC: incrementing";
 				end if;
 --pragma synthesis_on
 				PC <= PC + INCREMENT;

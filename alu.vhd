@@ -90,11 +90,15 @@ begin
 					when others =>
 						TEMP_RESULT <= (others => '0');
 				end case;
+--pragma synthesis_off
+				report "ALU: OP " & to_hstring(OP) & " Operand=" &
+					to_hstring(LEFT) & " Dest=" & to_hstring(RIGHT);
+--pragma synthesis_on
 			end if;
 		end if;
 	end process;
 
-	RESULT <= TEMP_RESULT (15 downto 0) when GIVE_RESULT = '1' else
+	RESULT <= TEMP_RESULT (15 downto 0) when (GIVE_RESULT = '1') else
 		RIGHT;
 	CARRY_OUT <= TEMP_RESULT (16);
 	ZERO_OUT <= '1' when (TEMP_RESULT (15 downto 0) = x"0000") else '0';
