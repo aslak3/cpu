@@ -8,14 +8,13 @@ This is also a work in progress.
 
 * 16 bit address and databuses
 * 16 bit opcodes
-* Some instructions (LOADI, STOREI, JUMPs) have one following operand
+* Some instructions (LOADI, STOREI, JUMPs, BRANCHes, ALUI) have one following operand
 * 8 x 16 bit general purpose registers
 * 16 bit Program Counter
 * Load and store instructions operate either through a register or an immediate address
 * Clear instruction
 * Simple status bits: zero, negative, carry
-* ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right,
-copy, negation, compare
+* ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right, copy, negation, compare
 * ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST, where both are registers.
 * Conditional jumps: always, on each flag set and on each flag clear
 * Nop instruction
@@ -28,9 +27,8 @@ copy, negation, compare
 
 # TODO
 
-* Some kind of assembler
-* Proper testbench for the cpu controller
-* Wrap it in an FPGA and connect up peripherals and RAM/ROM
+* A "good" custom cross assembler
+* Proper testbench for the CPU controller
 * Eliminate empty states
 * Add more instructions!
   - Bit test (non distructive and)
@@ -42,7 +40,11 @@ copy, negation, compare
 anything other then an ALU instruction
 * Hardware stack, subroutines
 
-# Opcode map
+# Top level RTL diagram
+
+![Top level RTL](docs/toplevel.png "Top level RTL")
+
+# Opcode map (OUT OF DATE)
 
 <table>
 <tr>
