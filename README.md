@@ -12,11 +12,14 @@ This is also a work in progress.
 * 8 x 16 bit general purpose registers
 * 16 bit Program Counter
 * Load and store instructions operate either through a register or an immediate address
-* Clear instruction
+  - With optional immediate displacement
+* Clear instruction, though it's currently no faster then an XOR
 * Simple status bits: zero, negative, carry
 * ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right, copy, negation, compare
-* ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST, where both are registers.
-* Conditional jumps: always, on each flag set and on each flag clear
+* ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST
+  - where both are registers
+  - ALUI operates with an immediate operand, eg ADDI r0,0x1234
+* Conditional jumps: always, on each flag set or clear with don't cares
 * Nop instruction
 * No microcode: a coded state machine is used
 
@@ -32,15 +35,14 @@ This is also a work in progress.
 * Eliminate empty states
 * Add more instructions!
   - Bit test (non distructive and)
-  - Relative addressing
+  - Relative addressing with the PC
   - ....
 * Properly implement twos complement
   - Arithmatic shifts
-* Better status bits: not currently settable, nor are they changed on
-anything other then an ALU instruction
+* Better status bits: not currently settable, nor are they changed on anything other then an ALU instruction
 * Hardware stack, subroutines
 
-# Top level RTL diagram
+# Top level RTL diagram (OUT OF DATE)
 
 ![Top level RTL](docs/toplevel.png "Top level RTL")
 

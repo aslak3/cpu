@@ -3,7 +3,7 @@ use IEEE.STD_LOGIC_1164.all;
 
 -- Instruction format
 --
--- Moves Source and Destination Register:
+-- Moves Source and Destination Register (with optional immediate displacement):
 -- [Opcode: 15 downto 10][Source: 5 downto 3][Destination: 2 downto 0]
 -- Moves Destination Register:
 -- [Opcode: 15 downto 10][Destination: 2 downto 0]
@@ -28,10 +28,11 @@ package P_CONTROL is
 
 	constant OPCODE_LOADI :		T_OPCODE := "001000";
 	constant OPCODE_STOREI :	T_OPCODE := "001001";
+	constant OPCODE_CLEAR :		T_OPCODE := "001100";
 	constant OPCODE_LOADR :		T_OPCODE := "001010";
 	constant OPCODE_STORER :	T_OPCODE := "001011";
-
-	constant OPCODE_CLEAR :		T_OPCODE := "001100";
+	constant OPCODE_LOADRD :	T_OPCODE := "011010";
+	constant OPCODE_STORERD :	T_OPCODE := "011011";
 
 	constant OPCODE_ALU :		T_OPCODE := "001110";
 	constant OPCODE_ALUI :		T_OPCODE := "001111";
@@ -47,13 +48,15 @@ package P_CONTROL is
 		S_FLOW1,
 		S_LOADI1, S_CLEAR1, S_STOREI1, S_STOREI2,
 		S_LOADR1, S_LOADR2, S_STORER1,
+		S_LOADRD1, S_LOADRD2, S_LOADRD3, S_STORERD1, S_STORERD2, S_STORERD3,
 		S_ALU1,
 		S_ALUI1, S_ALUI2
 	);
 
 	type T_ALU_LEFT_MUX_SEL is ( S_REGS_LEFT, S_DATA_IN );
-	type T_REGS_INPUT_MUX_SEL is ( S_ALU_RESULT, S_DATA_IN, S_REGS_RIGHT );
-	type T_ADDRESS_MUX_SEL is ( S_PC, S_REGS_LEFT, S_DATA_IN );
+	type T_ALU_RIGHT_MUX_SEL is ( S_REGS_RIGHT, S_DATA_IN );
+	type T_REGS_INPUT_MUX_SEL is ( S_ALU_RESULT, S_REGS_RIGHT, S_DATA_IN );
+	type T_ADDRESS_MUX_SEL is ( S_PC, S_REGS_LEFT, S_ALU_RESULT, S_DATA_IN );
 
 end package;
 
@@ -74,6 +77,7 @@ entity control is
 		WRITE : out STD_LOGIC;
 
 		ALU_LEFT_MUX_SEL : out T_ALU_LEFT_MUX_SEL;
+		ALU_RIGHT_MUX_SEL : out T_ALU_RIGHT_MUX_SEL;
 		REGS_INPUT_MUX_SEL : out T_REGS_INPUT_MUX_SEL;
 		ADDRESS_MUX_SEL : out T_ADDRESS_MUX_SEL;
 
@@ -108,7 +112,6 @@ architecture behavioural of control is
 begin
 	REGS_LEFT_INDEX <= INSTRUCTION (5 downto 3);
 	REGS_RIGHT_INDEX <= INSTRUCTION (2 downto 0);
-	ALU_OP <= INSTRUCTION (9 downto 6);
 
 	process (RESET, CLOCK)
 		variable STATE : T_STATE := S_FETCH1;
@@ -171,8 +174,16 @@ begin
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							STATE := S_STORER1;
 
+						when OPCODE_LOADRD =>
+							STATE := S_LOADRD1;
+
+						when OPCODE_STORERD =>
+							STATE := S_STORERD1;
+
 						when OPCODE_ALU =>
 							ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
+							ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
+							ALU_OP <= DATA_IN (9 downto 6);
 							ALU_DO_OP <= '1';
 							STATE := S_ALU1;
 
@@ -217,7 +228,7 @@ begin
 					STATE := S_LOADR2;
 
 				when S_LOADR2 =>
-					REGS_INPUT_MUX_SEL <= S_REGS_RIGHT;
+					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
@@ -227,6 +238,45 @@ begin
 					report "Control: STORER Address reg=" & to_hstring(REGS_LEFT_INDEX) & " Data reg=" &
 						to_hstring(REGS_RIGHT_INDEX);
 --pragma synthesis_on
+					WRITE <= '1';
+					STATE := S_FETCH1;
+
+				when S_LOADRD1 =>
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
+					PC_INCREMENT <= '1';
+					ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
+					ALU_RIGHT_MUX_SEL <= S_DATA_IN;
+					ALU_OP <= OP_ADD;
+					ALU_DO_OP <= '1';
+					STATE := S_LOADRD2;
+
+				when S_LOADRD2 =>
+					ADDRESS_MUX_SEL <= S_ALU_RESULT;
+					STATE := S_LOADRD3;
+
+				when S_LOADRD3 =>
+					READ <= '1';
+					REGS_INPUT_MUX_SEL <= S_DATA_IN;
+					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
+					REGS_WRITE <= '1';
+					STATE := S_FETCH1;
+
+				when S_STORERD1 =>
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
+					PC_INCREMENT <= '1';
+					ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
+					ALU_RIGHT_MUX_SEL <= S_DATA_IN;
+					ALU_OP <= OP_ADD;
+					ALU_DO_OP <= '1';
+					STATE := S_STORERD2;
+
+				when S_STORERD2 =>
+					ADDRESS_MUX_SEL <= S_ALU_RESULT;
+					STATE := S_STORERD3;
+
+				when S_STORERD3 =>
 					WRITE <= '1';
 					STATE := S_FETCH1;
 
@@ -272,7 +322,9 @@ begin
 					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
 					ALU_LEFT_MUX_SEL <= S_DATA_IN;
+					ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
 					ALU_DO_OP <= '1';
+					ALU_OP <= INSTRUCTION (9 downto 6);
 					PC_INCREMENT <= '1';
 					STATE := S_ALUI2;
 

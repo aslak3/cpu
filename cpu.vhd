@@ -20,6 +20,7 @@ end entity;
 
 architecture behavioural of cpu is
 	signal ALU_LEFT_MUX_SEL : T_ALU_LEFT_MUX_SEL;
+	signal ALU_RIGHT_MUX_SEL : T_ALU_RIGHT_MUX_SEL;
 	signal REGS_INPUT_MUX_SEL : T_REGS_INPUT_MUX_SEL;
 	signal ADDRESS_MUX_SEL : T_ADDRESS_MUX_SEL;
 
@@ -27,6 +28,7 @@ architecture behavioural of cpu is
 	signal ALU_DO_OP : STD_LOGIC := '0';
 	signal ALU_OP : T_ALU_OP := (others => '0');
 	signal ALU_LEFT_IN : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+	signal ALU_RIGHT_IN : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 	signal ALU_CARRY_IN : STD_LOGIC := '0';
 	signal ALU_RESULT : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');  -- outputs
 	signal ALU_CARRY_OUT : STD_LOGIC := '0';
@@ -58,6 +60,7 @@ begin
 		WRITE => WRITE,
 
 		ALU_LEFT_MUX_SEL => ALU_LEFT_MUX_SEL,
+		ALU_RIGHT_MUX_SEL => ALU_RIGHT_MUX_SEL,
 		REGS_INPUT_MUX_SEL => REGS_INPUT_MUX_SEL,
 		ADDRESS_MUX_SEL => ADDRESS_MUX_SEL,
 
@@ -84,7 +87,7 @@ begin
 		DO_OP => ALU_DO_OP,
 		OP => ALU_OP,
 		LEFT => ALU_LEFT_IN,
-		RIGHT => REGS_RIGHT_OUTPUT,
+		RIGHT => ALU_RIGHT_IN,
 		CARRY_IN => ALU_CARRY_IN,
 		RESULT => ALU_RESULT,
 		CARRY_OUT => ALU_CARRY_OUT,
@@ -117,13 +120,16 @@ begin
 
 	ALU_LEFT_IN <= 	REGS_LEFT_OUTPUT when (ALU_LEFT_MUX_SEL = S_REGS_LEFT) else
 					DATA_IN;
+	ALU_RIGHT_IN <=	REGS_RIGHT_OUTPUT when (ALU_RIGHT_MUX_SEL = S_REGS_RIGHT) else
+					DATA_IN;
 	REGS_INPUT <= 	ALU_RESULT when (REGS_INPUT_MUX_SEL = S_ALU_RESULT) else
 					REGS_RIGHT_OUTPUT when (REGS_INPUT_MUX_SEL = S_REGS_RIGHT) else
 					DATA_IN;
 	ADDRESS <=		PC_OUTPUT when (ADDRESS_MUX_SEL = S_PC) else
 					REGS_LEFT_OUTPUT when (ADDRESS_MUX_SEL = S_REGS_LEFT) else
+					ALU_RESULT when (ADDRESS_MUX_SEL = S_ALU_RESULT) else
 					DATA_IN;
-	DATA_OUT <= REGS_RIGHT_OUTPUT;
 
+	DATA_OUT <=		REGS_RIGHT_OUTPUT;
 
 end architecture;
