@@ -15,25 +15,31 @@ use IEEE.STD_LOGIC_1164.all;
 -- [Opcode 15 dowonto 10][Operation: 9 downto 6][Source: 5 downto 3][Destination: 2 donwto 0]
 -- ALU Destination Register only (or immediate source)
 -- [Opcode 15 dowonto 10][Operation: 9 downto 6][Destination: 2 donwto 0]
+-- Call and Return
+-- [Opcode: 15 downto 10][Stack Pointer: 5 downto 3][Stack Pointer: 2 downto 0]
 
 package P_CONTROL is
 	subtype T_OPCODE is STD_LOGIC_VECTOR (5 downto 0);
 
-	constant OPCODE_NOP :		T_OPCODE := "000000";
+	constant OPCODE_NOP :			T_OPCODE := "000000";
 
-	constant OPCODE_JUMP :		T_OPCODE := "000010";
-	constant OPCODE_BRANCH :	T_OPCODE := "000011";
+	constant OPCODE_JUMP :			T_OPCODE := "000010";
+	constant OPCODE_BRANCH :		T_OPCODE := "000011";
 
-	constant OPCODE_LOADI :		T_OPCODE := "001000";
-	constant OPCODE_STOREI :	T_OPCODE := "001001";
-	constant OPCODE_CLEAR :		T_OPCODE := "001100";
-	constant OPCODE_LOADR :		T_OPCODE := "001010";
-	constant OPCODE_STORER :	T_OPCODE := "001011";
-	constant OPCODE_LOADRD :	T_OPCODE := "011010";
-	constant OPCODE_STORERD :	T_OPCODE := "011011";
+	constant OPCODE_LOADI :			T_OPCODE := "001000";
+	constant OPCODE_STOREI :		T_OPCODE := "001001";
+	constant OPCODE_CLEAR :			T_OPCODE := "001100";
+	constant OPCODE_LOADR :			T_OPCODE := "001010";
+	constant OPCODE_STORER :		T_OPCODE := "001011";
+	constant OPCODE_LOADRD :		T_OPCODE := "011010";
+	constant OPCODE_STORERD :		T_OPCODE := "011011";
 
-	constant OPCODE_ALU :		T_OPCODE := "001110";
-	constant OPCODE_ALUI :		T_OPCODE := "001111";
+	constant OPCODE_ALU :			T_OPCODE := "001110";
+	constant OPCODE_ALUI :			T_OPCODE := "001111";
+
+	constant OPCODE_CALLJUMP :		T_OPCODE := "010000";
+	constant OPCODE_CALLBRANCH :	T_OPCODE := "010001";
+	constant OPCODE_RETURN :		T_OPCODE := "010010";
 
 	subtype T_FLOWTYPE is STD_LOGIC_VECTOR (2 downto 0);
 
@@ -47,7 +53,8 @@ package P_CONTROL is
 		S_LOADI1, S_STOREI1,
 		S_LOADR1, S_STORER1,
 		S_LOADRD1, S_LOADRD2, S_STORERD1, S_STORERD2,
-		S_ALU1
+		S_ALU1,
+		S_CALL1, S_CALL2, S_RETURN1
 	);
 
 	type T_ALU_LEFT_MUX_SEL is ( S_REGS_LEFT, S_DATA_IN );
@@ -89,7 +96,8 @@ entity control is
 
 		REGS_CLEAR : out STD_LOGIC;
 		REGS_WRITE : out STD_LOGIC;
-		REGS_WRITE_INDEX : out T_REG_INDEX;
+		REGS_INC : out STD_LOGIC;
+		REGS_DEC : out STD_LOGIC;
 		REGS_LEFT_INDEX : out T_REG_INDEX;
 		REGS_RIGHT_INDEX : out T_REG_INDEX;
 
@@ -125,6 +133,8 @@ begin
 			PC_INCREMENT <= '0';
 			REGS_CLEAR <= '0';
 			REGS_WRITE <= '0';
+			REGS_INC <= '0';
+			REGS_DEC <= '0';
 			ALU_DO_OP <= '0';
 			READ <= '0';
 			WRITE <= '0';
@@ -136,6 +146,8 @@ begin
 			PC_INCREMENT <= '0';
 			REGS_CLEAR <= '0';
 			REGS_WRITE <= '0';
+			REGS_INC <= '0';
+			REGS_DEC <= '0';
 			ALU_DO_OP <= '0';
 
 			case STATE is
@@ -148,7 +160,7 @@ begin
 				when S_FETCH2 =>
 					INSTRUCTION <= DATA_IN;
 --pragma synthesis_off
-					report "Control: Reading opcode " & to_string(INSTRUCTION (15 downto 10)) & " from " & T_ADDRESS_MUX_SEL'Image(ADDRESS_MUX_SEL);
+					report "Control: Reading opcode " & to_string(DATA_IN (15 downto 10)) & " from " & T_ADDRESS_MUX_SEL'Image(ADDRESS_MUX_SEL);
 --pragma synthesis_on
 					case DATA_IN (15 downto 10) is
 						when OPCODE_NOP =>
@@ -172,13 +184,11 @@ begin
 							STATE := S_STOREI1;
 
 						when OPCODE_CLEAR =>
-							REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 							REGS_CLEAR <= '1';
 							STATE := S_FETCH1;
 
 						when OPCODE_LOADR =>
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
-							READ <= '1';
 							STATE := S_LOADR1;
 
 						when OPCODE_STORER =>
@@ -219,6 +229,16 @@ begin
 							PC_INCREMENT <= '1';
 							STATE := S_ALU1;
 
+						when OPCODE_CALLJUMP | OPCODE_CALLBRANCH =>
+							ADDRESS_MUX_SEL <= S_PC;
+							READ <= '1';
+							REGS_DEC <= '1';
+							STATE := S_CALL1;
+
+						when OPCODE_RETURN =>
+							ADDRESS_MUX_SEL <= S_REGS_LEFT;
+							STATE := S_RETURN1;
+
 						when others =>
 --pragma synthesis_off
 							report "Control: No opcode match!";
@@ -228,7 +248,6 @@ begin
 
 				when S_LOADI1 =>
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
-					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
@@ -239,8 +258,8 @@ begin
 					STATE := S_FETCH1;
 
 				when S_LOADR1 =>
+					READ <= '1';
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
-					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
@@ -259,7 +278,6 @@ begin
 					ADDRESS_MUX_SEL <= S_ALU_RESULT;
 					READ <= '1';
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
-					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
@@ -303,15 +321,34 @@ begin
 						" Regs Input Mux Sel=" & T_REGS_INPUT_MUX_SEL'Image(REGS_INPUT_MUX_SEL);
 --pragma synthesis_on
 					REGS_INPUT_MUX_SEL <= S_ALU_RESULT;
-					REGS_WRITE_INDEX <= REGS_RIGHT_INDEX;
 					REGS_WRITE <= '1';
 					ALU_CARRY_IN <= ALU_CARRY_OUT;
 					STATE := S_FETCH1;
 
-				end case;
+				when S_CALL1 =>
+					if (OPCODE = OPCODE_CALLJUMP) then
+						PC_JUMP <= '1';
+					else
+						PC_BRANCH <= '1';
+					end if;
+					ADDRESS_MUX_SEL <= S_REGS_LEFT;
+					DATA_OUT_MUX_SEL <= S_PC;
+					STATE := S_CALL2;
+
+				when S_CALL2 =>
+					WRITE <= '1';
+					STATE := S_FETCH1;
+
+				when S_RETURN1 =>
+					READ <= '1';
+					REGS_INC <= '1';
+					PC_JUMP <= '1';
+					STATE := S_FETCH1;
+
+			end case;
 --pragma synthesis_off
-				report "Control: Opcode=" & to_string(OPCODE) & " Params=" & to_string(INSTRUCTION (9 downto 0)) & " STATE=" & T_STATE'image(STATE);
+			report "Control: Opcode=" & to_string(OPCODE) & " Params=" & to_string(INSTRUCTION (9 downto 0)) & " STATE=" & T_STATE'image(STATE);
 --pragma synthesis_on
-			end if;
+		end if;
 	end process;
 end architecture;

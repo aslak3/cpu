@@ -13,6 +13,7 @@ end package;
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use work.P_REGS.all;
 
 entity registers is
@@ -21,6 +22,8 @@ entity registers is
 		RESET : in STD_LOGIC;
 		CLEAR : in STD_LOGIC;
 		WRITE : in STD_LOGIC;
+		INC : in STD_LOGIC;
+		DEC : in STD_LOGIC;
 		READ_LEFT_INDEX : in T_REG_INDEX;
 		READ_RIGHT_INDEX : in T_REG_INDEX;
 		WRITE_INDEX : in T_REG_INDEX;
@@ -48,6 +51,18 @@ begin
 				report "Registers: Writing " & to_hstring(INPUT) & " into reg " & to_hstring(WRITE_INDEX);
 --pragma synthesis_on
 				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <= INPUT;
+			elsif (INC = '1') then
+--pragma synthesis_off
+				report "Registers: Incrementing reg " & to_hstring(WRITE_INDEX);
+--pragma synthesis_on
+				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <=
+					REGISTERS (to_integer(unsigned(WRITE_INDEX))) + 1;
+			elsif (DEC = '1') then
+--pragma synthesis_off
+				report "Registers: Decrementing reg " & to_hstring(WRITE_INDEX);
+--pragma synthesis_on
+				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <=
+					REGISTERS (to_integer(unsigned(WRITE_INDEX))) - 1;
 			end if;
 		end if;
 	end process;

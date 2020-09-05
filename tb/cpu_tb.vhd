@@ -18,53 +18,53 @@ architecture behavioral of cpu_tb is
 	signal CPU_WRITE : STD_LOGIC;
 	type MEM is ARRAY (0 to 63) of STD_LOGIC_VECTOR (15 downto 0);
 	signal RAM : MEM := (
-x"3000",
+x"2000",
+x"F00F",
+x"2007",
+x"0040",
+x"443F",
+x"0003",
+x"0C00",
+x"FFFF",
+x"403F",
+x"000B",
+x"483F",
+x"3005",
 x"2001",
-x"001F",
+x"002A",
 x"6809",
-x"0002",
+x"0001",
 x"2003",
 x"0000",
 x"2004",
-x"0022",
+x"002C",
 x"2824",
 x"3B0A",
-x"3801",
+x"3829",
 x"0D24",
 x"0009",
-x"3B10",
+x"3B15",
 x"6C19",
-x"0023",
+x"002D",
 x"3C03",
 x"0001",
 x"3944",
 x"0C90",
 x"FFF5",
-x"2000",
+x"2005",
 x"2A2A",
-x"2400",
-x"003F",
-x"2000",
+x"2405",
+x"003B",
+x"2005",
 x"AA55",
 x"2001",
-x"003E",
-x"2C08",
-x"0C00",
-x"FFFF",
+x"003A",
+x"2C0D",
+x"483F",
 x"0001",
-x"001D",
-		x"0000",  --NOP
-		x"0000",  --NOP
+x"000D",
+
 		x"0000", -- NOP
-		x"0000",  --NOP
-		x"0000", -- NOP
-		x"0000", -- NOP
-		x"0000", -- NOP
-		x"0000",  --NOP
-		x"0000", -- NOP
-		x"0000", -- NOP
-		x"0000", -- NOP
-		x"0000",  --NOP
 		x"0000", -- NOP
 		x"0000", -- NOP
 		x"0000", -- NOP
@@ -72,6 +72,7 @@ x"001D",
 		x"0000", -- NOP
 		x"0000", -- NOP
 		x"0000", -- NOP
+		x"0000",  --NOP
 		x"0000",  --NOP
 		x"0000", -- NOP
 		x"0000", -- NOP

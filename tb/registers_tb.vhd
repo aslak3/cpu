@@ -10,6 +10,8 @@ architecture behavioral of registers_tb is
 	signal RESET : STD_LOGIC := '0';
 	signal REGS_CLEAR : STD_LOGIC := '0';
 	signal REGS_WRITE : STD_LOGIC := '0';
+	signal REGS_INC : STD_LOGIC := '0';
+	signal REGS_DEC : STD_LOGIC := '0';
 	signal REGS_READ_LEFT_INDEX : T_REG_INDEX := (others => '0');
 	signal REGS_READ_RIGHT_INDEX : T_REG_INDEX := (others => '0');
 	signal REGS_WRITE_INDEX : T_REG_INDEX := (others => '0');
@@ -22,6 +24,8 @@ begin
 		RESET => RESET,
 		CLEAR => REGS_CLEAR,
 		WRITE => REGS_WRITE,
+		INC => REGS_INC,
+		DEC => REGS_DEC,
 		READ_LEFT_INDEX => REGS_READ_LEFT_INDEX,
 		READ_RIGHT_INDEX => REGS_READ_RIGHT_INDEX,
 		WRITE_INDEX => REGS_WRITE_INDEX,
@@ -80,6 +84,35 @@ begin
 
 		assert REGS_LEFT_OUTPUT = x"0000" and REGS_RIGHT_OUTPUT = x"0000"
 			report "Read/Clear of reg 0 failed" severity failure;
+
+		REGS_INC <= '1';
+		REGS_WRITE_INDEX <= "000";
+
+		clock_delay;
+
+		REGS_INC <= '0';
+		REGS_READ_LEFT_INDEX <= "000";
+		REGS_READ_RIGHT_INDEX <= "000";
+		REGS_WRITE <= '0';
+
+		clock_delay;
+
+		assert REGS_LEFT_OUTPUT = x"0001" and REGS_RIGHT_OUTPUT = x"0001"
+			report "Increment of reg 0 failed" severity failure;
+		REGS_DEC <= '1';
+		REGS_WRITE_INDEX <= "000";
+
+		clock_delay;
+
+		REGS_DEC <= '0';
+		REGS_READ_LEFT_INDEX <= "000";
+		REGS_READ_RIGHT_INDEX <= "000";
+		REGS_WRITE <= '0';
+
+		clock_delay;
+
+		assert REGS_LEFT_OUTPUT = x"0000" and REGS_RIGHT_OUTPUT = x"0000"
+			report "Decrement of reg 0 failed" severity failure;
 
 		report "+++All good";
 		std.env.finish;
