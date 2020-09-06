@@ -53,6 +53,10 @@ architecture behavioural of cpu is
 	signal PC_INCREMENT : STD_LOGIC := '0';
 	signal PC_OUTPUT : T_REG := (others => '0');
 
+	-- Temporary
+	signal TEMPORARY_WRITE : STD_LOGIC := '0';
+	signal TEMPORARY_OUTPUT : T_REG := (others => '0');
+
 begin
 	control: entity work.control port map (
 		CLOCK => CLOCK,
@@ -83,7 +87,9 @@ begin
 
 		PC_JUMP => PC_JUMP,
 		PC_BRANCH => PC_BRANCH,
-		PC_INCREMENT => PC_INCREMENT
+		PC_INCREMENT => PC_INCREMENT,
+
+		TEMPORARY_WRITE => TEMPORARY_WRITE
 	);
 
 	alu: entity work.alu port map (
@@ -124,6 +130,14 @@ begin
 		OUTPUT => PC_OUTPUT
 	);
 
+	temporary: entity work.temporary port map (
+		CLOCK => CLOCK,
+		RESET => RESET,
+		WRITE => TEMPORARY_WRITE,
+		INPUT => DATA_IN,
+		OUTPUT => TEMPORARY_OUTPUT
+	);
+
 	ALU_LEFT_IN <= 	REGS_LEFT_OUTPUT when (ALU_LEFT_MUX_SEL = S_REGS_LEFT) else
 					DATA_IN;
 	ALU_RIGHT_IN <=	REGS_RIGHT_OUTPUT when (ALU_RIGHT_MUX_SEL = S_REGS_RIGHT) else
@@ -134,6 +148,7 @@ begin
 	ADDRESS <=		PC_OUTPUT when (ADDRESS_MUX_SEL = S_PC) else
 					REGS_LEFT_OUTPUT when (ADDRESS_MUX_SEL = S_REGS_LEFT) else
 					ALU_RESULT when (ADDRESS_MUX_SEL = S_ALU_RESULT) else
+					TEMPORARY_OUTPUT when (ADDRESS_MUX_SEL = S_TEMPORARY_OUTPUT) else
 					DATA_IN;
 	DATA_OUT <=		PC_OUTPUT when (DATA_OUT_MUX_SEL = S_PC) else
 					REGS_RIGHT_OUTPUT;

@@ -12,7 +12,7 @@ use IEEE.STD_LOGIC_1164.all;
 -- Jump/Branch conditionally:
 -- [Opcode 15 downto 10][Flags: 8 downto 6][Care: 5 downto 3][Polarity: 2 downto 0]
 -- ALU Source and Destination Register
--- [Opcode 15 dowonto 10][Operation: 9 downto 6][Source: 5 downto 3][Destination: 2 donwto 0]
+-- [Opcode 15 dowonto 10][Operation: 9 downto 6][Source: 5 downto 3][Destination: 2 downto 0]
 -- ALU Destination Register only (or immediate source)
 -- [Opcode 15 dowonto 10][Operation: 9 downto 6][Destination: 2 donwto 0]
 -- Call and Return
@@ -51,17 +51,22 @@ package P_CONTROL is
 		S_FETCH1, S_FETCH2,
 		S_FLOW1,
 		S_LOADI1, S_STOREI1,
-		S_LOADR1, S_STORER1,
+		S_LOADR1, S_STORER1, S_STOREI2,
 		S_LOADRD1, S_LOADRD2, S_STORERD1, S_STORERD2,
 		S_ALU1,
 		S_CALL1, S_CALL2, S_RETURN1
 	);
 
-	type T_ALU_LEFT_MUX_SEL is ( S_REGS_LEFT, S_DATA_IN );
-	type T_ALU_RIGHT_MUX_SEL is ( S_REGS_RIGHT, S_DATA_IN );
-	type T_REGS_INPUT_MUX_SEL is ( S_ALU_RESULT, S_REGS_RIGHT, S_DATA_IN );
-	type T_ADDRESS_MUX_SEL is ( S_PC, S_REGS_LEFT, S_ALU_RESULT, S_DATA_IN );
-	type T_DATA_OUT_MUX_SEL is ( S_PC, S_REGS_RIGHT );
+	type T_ALU_LEFT_MUX_SEL is
+		( S_REGS_LEFT, S_DATA_IN );
+	type T_ALU_RIGHT_MUX_SEL is
+		( S_REGS_RIGHT, S_DATA_IN );
+	type T_REGS_INPUT_MUX_SEL is
+		( S_ALU_RESULT, S_REGS_RIGHT, S_DATA_IN );
+	type T_ADDRESS_MUX_SEL is
+		( S_PC, S_REGS_LEFT, S_ALU_RESULT, S_TEMPORARY_OUTPUT, S_DATA_IN );
+	type T_DATA_OUT_MUX_SEL is
+		( S_PC, S_REGS_RIGHT );
 
 end package;
 
@@ -103,7 +108,9 @@ entity control is
 
 		PC_JUMP : out STD_LOGIC;
 		PC_BRANCH : out STD_LOGIC;
-		PC_INCREMENT : out STD_LOGIC
+		PC_INCREMENT : out STD_LOGIC;
+
+		TEMPORARY_WRITE : out STD_LOGIC
 	);
 end entity;
 
@@ -138,6 +145,7 @@ begin
 			ALU_DO_OP <= '0';
 			READ <= '0';
 			WRITE <= '0';
+			TEMPORARY_WRITE <= '1';
 		elsif (CLOCK'Event and CLOCK = '1') then
 			READ <= '0';
 			WRITE <= '0';
@@ -149,6 +157,7 @@ begin
 			REGS_INC <= '0';
 			REGS_DEC <= '0';
 			ALU_DO_OP <= '0';
+			TEMPORARY_WRITE <= '0';
 
 			case STATE is
 				when S_FETCH1 =>
@@ -167,20 +176,12 @@ begin
 							STATE := S_FETCH1;
 
 						when OPCODE_JUMP | OPCODE_BRANCH =>
-							ADDRESS_MUX_SEL <= S_PC;
-							READ <= '1';
 							STATE := S_FLOW1;
 
 						when OPCODE_LOADI =>
-							ADDRESS_MUX_SEL <= S_PC;
-							READ <= '1';
-							PC_INCREMENT <= '1';
 							STATE := S_LOADI1;
 
 						when OPCODE_STOREI =>
-							ADDRESS_MUX_SEL <= S_PC;
-							READ <= '1';
-							PC_INCREMENT <= '1';
 							STATE := S_STOREI1;
 
 						when OPCODE_CLEAR =>
@@ -197,15 +198,11 @@ begin
 							STATE := S_STORER1;
 
 						when OPCODE_LOADRD =>
-							ADDRESS_MUX_SEL <= S_PC;
-							READ <= '1';
-							PC_INCREMENT <= '1';
 							STATE := S_LOADRD1;
 
 						when OPCODE_STORERD =>
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
-							PC_INCREMENT <= '1';
 							ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
 							ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 							ALU_OP <= OP_ADD;
@@ -226,12 +223,11 @@ begin
 							ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
 							ALU_DO_OP <= '1';
 							ALU_OP <= DATA_IN (9 downto 6);
-							PC_INCREMENT <= '1';
 							STATE := S_ALU1;
 
 						when OPCODE_CALLJUMP | OPCODE_CALLBRANCH =>
-							ADDRESS_MUX_SEL <= S_PC;
-							READ <= '1';
+							ADDRESS_MUX_SEL <= S_REGS_LEFT;
+							DATA_OUT_MUX_SEL <= S_PC;
 							REGS_DEC <= '1';
 							STATE := S_CALL1;
 
@@ -247,14 +243,24 @@ begin
 					end case;
 
 				when S_LOADI1 =>
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
+					PC_INCREMENT <= '1';
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
 				when S_STOREI1 =>
-					ADDRESS_MUX_SEL <= S_DATA_IN;
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
+					TEMPORARY_WRITE <= '1';
+					STATE := S_STOREI2;
+
+				when S_STOREI2 =>
+					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 					WRITE <= '1';
+					PC_INCREMENT <= '1';
 					STATE := S_FETCH1;
 
 				when S_LOADR1 =>
@@ -268,6 +274,8 @@ begin
 					STATE := S_FETCH1;
 
 				when S_LOADRD1 =>
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
 					ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
 					ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 					ALU_OP <= OP_ADD;
@@ -282,6 +290,7 @@ begin
 					STATE := S_FETCH1;
 
 				when S_STORERD1 =>
+					PC_INCREMENT <= '1';
 					ADDRESS_MUX_SEL <= S_ALU_RESULT;
 					DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 					STATE := S_STORERD2;
@@ -294,6 +303,8 @@ begin
 --pragma synthesis_off
 					report "Control: Jumping/Branching condition=" & to_string(FLOW_FLAGS) & " Cares=" & to_string(FLOW_CARES) & " Polarity=" & to_string(FLOW_POLARITY);
 --pragma synthesis_on
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
 					if (
 						( FLOW_CARES = "000" ) or
 						(
@@ -315,6 +326,9 @@ begin
 					STATE := S_FETCH1;
 
 				when S_ALU1 =>
+					if (OPCODE = OPCODE_ALUI) then
+						PC_INCREMENT <= '1';
+					end if;
 --pragma synthesis_off
 					report "Control: ALU OP " & to_hstring(ALU_OP) & " Operand reg=" & to_hstring(REGS_LEFT_INDEX) &
 						" Dest reg=" & to_hstring(REGS_RIGHT_INDEX) &
@@ -326,17 +340,17 @@ begin
 					STATE := S_FETCH1;
 
 				when S_CALL1 =>
+					WRITE <= '1';
+					STATE := S_CALL2;
+
+				when S_CALL2 =>
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
 					if (OPCODE = OPCODE_CALLJUMP) then
 						PC_JUMP <= '1';
 					else
 						PC_BRANCH <= '1';
 					end if;
-					ADDRESS_MUX_SEL <= S_REGS_LEFT;
-					DATA_OUT_MUX_SEL <= S_PC;
-					STATE := S_CALL2;
-
-				when S_CALL2 =>
-					WRITE <= '1';
 					STATE := S_FETCH1;
 
 				when S_RETURN1 =>

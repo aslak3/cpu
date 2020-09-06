@@ -122,3 +122,39 @@ begin
 
 	OUTPUT <= PC;
 end architecture;
+
+---
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use work.P_REGS.all;
+
+entity temporary is
+	port (
+		CLOCK : in STD_LOGIC;
+		RESET : in STD_LOGIC;
+		WRITE : in STD_LOGIC;
+		OUTPUT : out T_REG;
+		INPUT : in T_REG
+	);
+end entity;
+
+architecture behavioral of temporary is
+	signal TEMP : T_REG := DEFAULT_REG;
+begin
+	process (RESET, CLOCK)
+	begin
+		if (RESET = '1') then
+			TEMP <= DEFAULT_REG;
+		elsif (CLOCK'Event and CLOCK = '1') then
+			if (WRITE = '1') then
+--pragma synthesis_off
+				report "Temporary: Writing " & to_hstring(INPUT);
+--pragma synthesis_on
+				TEMP <= INPUT;
+			end if;
+		end if;
+	end process;
+
+	OUTPUT <= TEMP;
+end architecture;
