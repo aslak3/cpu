@@ -119,6 +119,8 @@ begin
 	end process;
 end architecture;
 
+---
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use work.P_REGS.all;
@@ -189,6 +191,61 @@ begin
 			report "PC branch" severity failure;
 
 		clock_delay;
+
+		report "+++All good";
+		std.env.finish;
+	end process;
+end architecture;
+
+---
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use work.P_REGS.all;
+
+entity temporary_tb is
+end entity;
+
+architecture behavioral of temporary_tb is
+	signal CLOCK : STD_LOGIC;
+	signal RESET : STD_LOGIC;
+	signal TEMPORARY_WRITE : STD_LOGIC := '0';
+	signal TEMPORARY_INPUT : T_REG := (others => '0');
+	signal TEMPORARY_OUTPUT : T_REG;
+begin
+	dut: entity work.temporary port map (
+		CLOCK => CLOCK,
+		RESET => RESET,
+		WRITE => TEMPORARY_WRITE,
+		INPUT => TEMPORARY_INPUT,
+		OUTPUT => TEMPORARY_OUTPUT
+	);
+
+	process
+		procedure clock_delay is
+		begin
+			CLOCK <= '1';
+			wait for 1 ns;
+			CLOCK <= '0';
+			wait for 1 ns;
+		end procedure;
+	begin
+		RESET <= '1';
+		wait for 1 ns;
+		RESET <= '0';
+
+		clock_delay;
+
+		assert TEMPORARY_OUTPUT = x"0000"
+			report "Temporary reset" severity failure;
+
+		TEMPORARY_WRITE <= '1';
+		TEMPORARY_INPUT <= x"1234";
+		clock_delay;
+		TEMPORARY_WRITE <= '0';
+
+		assert TEMPORARY_OUTPUT = x"1234"
+			report "Temporary set" severity failure;
 
 		report "+++All good";
 		std.env.finish;

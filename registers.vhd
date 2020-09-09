@@ -134,8 +134,8 @@ entity temporary is
 		CLOCK : in STD_LOGIC;
 		RESET : in STD_LOGIC;
 		WRITE : in STD_LOGIC;
-		OUTPUT : out T_REG;
-		INPUT : in T_REG
+		INPUT : in T_REG;
+		OUTPUT : out T_REG
 	);
 end entity;
 
