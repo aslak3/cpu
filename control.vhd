@@ -41,6 +41,9 @@ package P_CONTROL is
 	constant OPCODE_CALLBRANCH :	T_OPCODE := "010001";
 	constant OPCODE_RETURN :		T_OPCODE := "010010";
 
+	constant OPCODE_PUSHQUICK :		T_OPCODE := "010100";
+	constant OPCODE_POPQUICK :		T_OPCODE := "010101";
+
 	subtype T_FLOWTYPE is STD_LOGIC_VECTOR (2 downto 0);
 
 	constant FLOWTYPE_CARRY :	integer := 0;
@@ -54,7 +57,8 @@ package P_CONTROL is
 		S_LOADR1, S_STORER1, S_STOREI2,
 		S_LOADRD1, S_LOADRD2, S_STORERD1, S_STORERD2,
 		S_ALU1,
-		S_CALL1, S_CALL2, S_RETURN1
+		S_CALL1, S_CALL2, S_RETURN1,
+		S_PUSHQUICK1, S_POPQUICK1
 	);
 
 	type T_ALU_LEFT_MUX_SEL is
@@ -62,11 +66,13 @@ package P_CONTROL is
 	type T_ALU_RIGHT_MUX_SEL is
 		( S_REGS_RIGHT, S_DATA_IN );
 	type T_REGS_INPUT_MUX_SEL is
-		( S_ALU_RESULT, S_REGS_RIGHT, S_DATA_IN );
+		( S_ALU_RESULT, S_REGS_RIGHT, S_TEMPORARY_OUTPUT, S_DATA_IN );
+	type T_REGS_WRITE_INDEX_MUX_SEL is
+		( S_REGS_LEFT, S_REGS_RIGHT );
 	type T_ADDRESS_MUX_SEL is
-		( S_PC, S_REGS_LEFT, S_ALU_RESULT, S_TEMPORARY_OUTPUT, S_DATA_IN );
+		( S_PC, S_REGS_LEFT, S_REGS_RIGHT, S_ALU_RESULT, S_TEMPORARY_OUTPUT, S_DATA_IN );
 	type T_DATA_OUT_MUX_SEL is
-		( S_PC, S_REGS_RIGHT );
+		( S_PC, S_REGS_LEFT, S_REGS_RIGHT );
 
 end package;
 
@@ -89,6 +95,7 @@ entity control is
 		ALU_LEFT_MUX_SEL : out T_ALU_LEFT_MUX_SEL;
 		ALU_RIGHT_MUX_SEL : out T_ALU_RIGHT_MUX_SEL;
 		REGS_INPUT_MUX_SEL : out T_REGS_INPUT_MUX_SEL;
+		REGS_WRITE_INDEX_MUX_SEL : out T_REGS_WRITE_INDEX_MUX_SEL;
 		ADDRESS_MUX_SEL : out T_ADDRESS_MUX_SEL;
 		DATA_OUT_MUX_SEL : out T_DATA_OUT_MUX_SEL;
 
@@ -132,6 +139,13 @@ begin
 	begin
 		if (RESET = '1') then
 			STATE := S_FETCH1;
+
+			ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
+			ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
+			REGS_INPUT_MUX_SEL <= S_REGS_RIGHT;
+			REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
+			ADDRESS_MUX_SEL <= S_PC;
+			DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 
 			INSTRUCTION <= (others => '0');
 			ALU_CARRY_IN <= '0';
@@ -186,6 +200,7 @@ begin
 
 						when OPCODE_CLEAR =>
 							REGS_CLEAR <= '1';
+							REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
 							STATE := S_FETCH1;
 
 						when OPCODE_LOADR =>
@@ -229,11 +244,29 @@ begin
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							DATA_OUT_MUX_SEL <= S_PC;
 							REGS_DEC <= '1';
+							REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
 							STATE := S_CALL1;
 
 						when OPCODE_RETURN =>
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							STATE := S_RETURN1;
+
+						when OPCODE_PUSHQUICK =>
+							report "Control: Push Quick";
+							ADDRESS_MUX_SEL <= S_REGS_RIGHT;
+							DATA_OUT_MUX_SEL <= S_REGS_LEFT;
+							REGS_DEC <= '1';
+							REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
+							STATE := S_PUSHQUICK1;
+
+						when OPCODE_POPQUICK =>
+							report "Control: Pop Quick";
+							ADDRESS_MUX_SEL <= S_REGS_RIGHT;
+							READ <= '1';
+							REGS_INC <= '1';
+							REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
+							TEMPORARY_WRITE <= '1';
+							STATE := S_POPQUICK1;
 
 						when others =>
 --pragma synthesis_off
@@ -248,6 +281,7 @@ begin
 					PC_INCREMENT <= '1';
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE <= '1';
+					REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
 					STATE := S_FETCH1;
 
 				when S_STOREI1 =>
@@ -267,6 +301,7 @@ begin
 					READ <= '1';
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE <= '1';
+					REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
 					STATE := S_FETCH1;
 
 				when S_STORER1 =>
@@ -287,6 +322,7 @@ begin
 					READ <= '1';
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE <= '1';
+					REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
 					STATE := S_FETCH1;
 
 				when S_STORERD1 =>
@@ -336,6 +372,7 @@ begin
 --pragma synthesis_on
 					REGS_INPUT_MUX_SEL <= S_ALU_RESULT;
 					REGS_WRITE <= '1';
+					REGS_WRITE_INDEX_MUX_SEL <= S_REGS_RIGHT;
 					ALU_CARRY_IN <= ALU_CARRY_OUT;
 					STATE := S_FETCH1;
 
@@ -357,6 +394,16 @@ begin
 					READ <= '1';
 					REGS_INC <= '1';
 					PC_JUMP <= '1';
+					STATE := S_FETCH1;
+
+				when S_PUSHQUICK1 =>
+					WRITE <= '1';
+					STATE := S_FETCH1;
+
+				when S_POPQUICK1 =>
+					REGS_WRITE_INDEX_MUX_SEL <= S_REGS_LEFT;
+					REGS_INPUT_MUX_SEL <= S_TEMPORARY_OUTPUT;
+					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
 			end case;
