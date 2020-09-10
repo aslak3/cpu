@@ -40,7 +40,6 @@ This is also a work in progress.
 * Properly implement twos complement
   - Arithmatic shifts
 * Better status bits: not currently settable, nor are they changed on anything other then an ALU instruction
-* Hardware stack, subroutines
 
 # Top level RTL diagram (OUT OF DATE)
 

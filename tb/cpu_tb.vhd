@@ -114,53 +114,53 @@ architecture behavioral of cpu_tb is
 	signal RAM : MEM := (
 
 x"2000",
-x"f00f",
+x"0001",
+x"2001",
+x"0002",
+x"2002",
+x"0003",
+x"2003",
+x"0004",
+x"2004",
+x"0005",
+x"2005",
+x"0006",
+x"2006",
+x"0007",
 x"2007",
 x"0040",
-x"443f",
-x"0003",
-x"0c00",
-x"ffff",
-x"403f",
-x"000b",
-x"483f",
-x"3005",
-x"2001",
-x"002d",
-x"6809",
-x"0001",
-x"2003",
-x"0000",
-x"2004",
-x"002f",
-x"2824",
-x"5027",
+x"5838",
+x"007f",
+x"3000",
+x"3001",
+x"3002",
+x"3003",
 x"3004",
-x"5427",
-x"3b0a",
-x"3829",
-x"0d24",
-x"0009",
-x"3b15",
-x"6c19",
-x"0030",
-x"3c03",
-x"0001",
-x"3944",
-x"0c90",
-x"fff5",
-x"2005",
-x"2a2a",
-x"2405",
-x"003b",
-x"2005",
-x"aa55",
-x"2001",
-x"003a",
-x"2c0d",
-x"483f",
-x"0001",
-x"000a",
+x"3005",
+x"3006",
+x"5c38",
+x"007f",
+x"5838",
+x"007f",
+x"503c",
+x"543c",
+x"0800",
+x"001f",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
+x"0000",
 x"0000",
 x"0000",
 x"0000",
@@ -177,6 +177,7 @@ x"0000",
 x"0000",
 x"0000",
 x"0000"
+
 
 );
 
@@ -211,8 +212,8 @@ begin
 		WRITE => CPU_WRITE
 	);
 
-	CPU_DATA_IN <= RAM(to_integer(unsigned(CPU_ADDRESS))) when (AD_SELECTS(SELECT_RAM) = '1' and CPU_READ = '1') else
-		(others => 'X');
+--	CPU_DATA_IN <= RAM(to_integer(unsigned(CPU_ADDRESS))) when (AD_SELECTS(SELECT_RAM) = '1' and CPU_READ = '1') else
+--		(others => 'X');
 
 	process (CLOCK50M)
 	begin
@@ -229,6 +230,10 @@ begin
 				elsif (AD_SELECTS(SELECT_VGA_MEMORY) = '1') then
 					report "Writing to video memory " & to_hstring(CPU_DATA_OUT) & " @ " & to_hstring(CPU_ADDRESS);
 				end if;
+			end if;
+
+			if (CPU_READ = '1') then
+				CPU_DATA_IN <= RAM(to_integer(unsigned(CPU_ADDRESS)));
 			end if;
 		end if;
 	end process;

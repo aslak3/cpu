@@ -27,6 +27,7 @@ entity registers is
 		READ_LEFT_INDEX : in T_REG_INDEX;
 		READ_RIGHT_INDEX : in T_REG_INDEX;
 		WRITE_INDEX : in T_REG_INDEX;
+		INCDEC_INDEX : in T_REG_INDEX;
 		LEFT_OUTPUT : out T_REG;
 		RIGHT_OUTPUT : out T_REG;
 		INPUT : in T_REG
@@ -51,18 +52,19 @@ begin
 				report "Registers: Writing " & to_hstring(INPUT) & " into reg " & to_hstring(WRITE_INDEX);
 --pragma synthesis_on
 				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <= INPUT;
-			elsif (INC = '1') then
+			end if;
+			if (INC = '1') then
 --pragma synthesis_off
-				report "Registers: Incrementing reg " & to_hstring(WRITE_INDEX);
+				report "Registers: Incrementing reg " & to_hstring(INCDEC_INDEX);
 --pragma synthesis_on
-				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <=
-					REGISTERS (to_integer(unsigned(WRITE_INDEX))) + 1;
+				REGISTERS (to_integer(unsigned(INCDEC_INDEX))) <=
+					REGISTERS (to_integer(unsigned(INCDEC_INDEX))) + 1;
 			elsif (DEC = '1') then
 --pragma synthesis_off
-				report "Registers: Decrementing reg " & to_hstring(WRITE_INDEX);
+				report "Registers: Decrementing reg " & to_hstring(INCDEC_INDEX);
 --pragma synthesis_on
-				REGISTERS (to_integer(unsigned(WRITE_INDEX))) <=
-					REGISTERS (to_integer(unsigned(WRITE_INDEX))) - 1;
+				REGISTERS (to_integer(unsigned(INCDEC_INDEX))) <=
+					REGISTERS (to_integer(unsigned(INCDEC_INDEX))) - 1;
 			end if;
 		end if;
 	end process;
