@@ -104,61 +104,63 @@ architecture behavioral of cpu_tb is
 
 	signal AD_SELECTS : T_SELECT_LOGIC;
 
-	signal CPU_ADDRESS : STD_LOGIC_VECTOR (15 downto 0);
-	signal CPU_DATA_IN : STD_LOGIC_VECTOR (15 downto 0);
-	signal CPU_DATA_OUT : STD_LOGIC_VECTOR (15 downto 0);
-	signal CPU_READ : STD_LOGIC;
-	signal CPU_WRITE : STD_LOGIC;
+	signal BUSINTERFACE_ADDRESS : STD_LOGIC_VECTOR (14 downto 0);
+	signal BUSINTERFACE_DATA_IN : STD_LOGIC_VECTOR (15 downto 0);
+	signal BUSINTERFACE_DATA_OUT : STD_LOGIC_VECTOR (15 downto 0);
+	signal BUSINTERFACE_UPPER_DATA : STD_LOGIC;
+	signal BUSINTERFACE_LOWER_DATA : STD_LOGIC;
+	signal BUSINTERFACE_READ : STD_LOGIC;
+	signal BUSINTERFACE_WRITE : STD_LOGIC;
 
 	type MEM is ARRAY (0 to 63) of STD_LOGIC_VECTOR (15 downto 0);
 	signal RAM : MEM := (
 
-x"2000",
-x"0001",
+x"2200",
+x"ff34",
 x"2001",
-x"0002",
+x"007e",
+x"6e08",
+x"0001",
+x"2000",
+x"0012",
+x"2001",
+x"007e",
+x"6e08",
+x"0000",
+x"2001",
+x"007f",
+x"2a08",
+x"2600",
+x"006e",
+x"2001",
+x"007e",
+x"2a08",
+x"2600",
+x"006f",
+x"2001",
+x"0054",
+x"6b08",
+x"0001",
+x"2400",
+x"005e",
+x"2001",
+x"0056",
 x"2002",
-x"0003",
-x"2003",
-x"0004",
-x"2004",
-x"0005",
-x"2005",
-x"0006",
-x"2006",
-x"0007",
-x"2007",
-x"0040",
-x"5838",
-x"007f",
-x"3000",
-x"3001",
-x"3002",
-x"3003",
-x"3004",
-x"3005",
-x"3006",
-x"5c38",
-x"007f",
-x"5838",
-x"007f",
-x"503c",
-x"543c",
+x"0064",
+x"2a08",
+x"2e10",
+x"3901",
+x"3902",
+x"3fc0",
+x"0000",
+x"0c90",
+x"fff2",
 x"0800",
-x"001f",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
+x"0050",
+x"0080",
+x"1234",
+x"5678",
+x"9000",
 x"0000",
 x"0000",
 x"0000",
@@ -177,7 +179,6 @@ x"0000",
 x"0000",
 x"0000",
 x"0000"
-
 
 );
 
@@ -198,42 +199,48 @@ begin
 
 	addressdecoder: entity work.addressdecoder port map (
 		CLOCK => CLOCK50M,
-		ADDRESS => CPU_ADDRESS (15 downto 8),
+		ADDRESS => BUSINTERFACE_ADDRESS (14 downto 7),
 		SELECTS => AD_SELECTS
 	);
 
-	dut: entity work.cpu port map (
+	dut: entity work.businterface port map (
 		CLOCK => CLOCK,
 		RESET => RESET,
-		ADDRESS => CPU_ADDRESS,
-		DATA_IN => CPU_DATA_IN,
-		DATA_OUT => CPU_DATA_OUT,
-		READ => CPU_READ,
-		WRITE => CPU_WRITE
+		ADDRESS => BUSINTERFACE_ADDRESS,
+		DATA_IN => BUSINTERFACE_DATA_IN,
+		DATA_OUT => BUSINTERFACE_DATA_OUT,
+		UPPER_DATA => BUSINTERFACE_UPPER_DATA,
+		LOWER_DATA => BUSINTERFACE_LOWER_DATA,
+		READ => BUSINTERFACE_READ,
+		WRITE => BUSINTERFACE_WRITE
 	);
-
---	CPU_DATA_IN <= RAM(to_integer(unsigned(CPU_ADDRESS))) when (AD_SELECTS(SELECT_RAM) = '1' and CPU_READ = '1') else
---		(others => 'X');
 
 	process (CLOCK50M)
 	begin
 		if (CLOCK50M'Event and CLOCK50M = '1') then
-			if (CPU_WRITE = '1') then
+			if (BUSINTERFACE_WRITE = '1') then
 				if (AD_SELECTS(SELECT_RAM) = '1') then
-					RAM(to_integer(unsigned(CPU_ADDRESS))) <= CPU_DATA_OUT;
+					if (BUSINTERFACE_UPPER_DATA = '1') then
+						report "Writing " & to_hstring(BUSINTERFACE_DATA_OUT (15 downto 8)) & " upper to " & to_hstring(BUSINTERFACE_ADDRESS & '0');
+						RAM(to_integer(unsigned(BUSINTERFACE_ADDRESS))) (15 downto 8) <= BUSINTERFACE_DATA_OUT (15 downto 8);
+					end if;
+					if (BUSINTERFACE_LOWER_DATA = '1') then
+						report "Writing " & to_hstring(BUSINTERFACE_DATA_OUT (7 downto 0)) & " lower to " & to_hstring(BUSINTERFACE_ADDRESS & '0');
+						RAM(to_integer(unsigned(BUSINTERFACE_ADDRESS))) (7 downto 0) <= BUSINTERFACE_DATA_OUT (7 downto 0);
+					end if;
 				elsif (AD_SELECTS(SELECT_LED) = '1') then
-					report "Setting LED to " & STD_LOGIC'Image(CPU_DATA_OUT (0));
+					report "Setting LED to " & STD_LOGIC'Image(BUSINTERFACE_DATA_OUT (0));
 				elsif (AD_SELECTS(SELECT_SEVENSEG) = '1') then
-					report "Setting 7 Segment to " & to_hstring(CPU_DATA_OUT);
+					report "Setting 7 Segment to " & to_hstring(BUSINTERFACE_DATA_OUT);
 				elsif (AD_SELECTS(SELECT_BUZZER) = '1') then
-					report "Setting Buzzer " & to_hstring(CPU_DATA_OUT);
+					report "Setting Buzzer " & to_hstring(BUSINTERFACE_DATA_OUT);
 				elsif (AD_SELECTS(SELECT_VGA_MEMORY) = '1') then
-					report "Writing to video memory " & to_hstring(CPU_DATA_OUT) & " @ " & to_hstring(CPU_ADDRESS);
+					report "Writing to video memory " & to_hstring(BUSINTERFACE_DATA_OUT) & " @ " & to_hstring(BUSINTERFACE_ADDRESS);
 				end if;
 			end if;
 
-			if (CPU_READ = '1') then
-				CPU_DATA_IN <= RAM(to_integer(unsigned(CPU_ADDRESS)));
+			if (BUSINTERFACE_READ = '1') then
+				BUSINTERFACE_DATA_IN <= RAM(to_integer(unsigned(BUSINTERFACE_ADDRESS)));
 			end if;
 		end if;
 	end process;
@@ -253,9 +260,10 @@ begin
 		RESET <= '0';
 
 		for C in 0 to 1000 loop
-			report "Address=" & to_hstring(CPU_ADDRESS) &
-				" Read=" & STD_LOGIC'image(CPU_READ) & " Write=" & STD_LOGIC'image(CPU_WRITE) &
-				" Data Out=" & to_hstring(CPU_DATA_OUT) & " Data In=" & to_hstring(CPU_DATA_IN);
+			report "Address=" & to_hstring(BUSINTERFACE_ADDRESS & '0') &
+				" Read=" & STD_LOGIC'image(BUSINTERFACE_READ) & " Write=" & STD_LOGIC'image(BUSINTERFACE_WRITE) &
+				" Data Out=" & to_hstring(BUSINTERFACE_DATA_OUT) & " Data In=" & to_hstring(BUSINTERFACE_DATA_IN) &
+				" Upper=" & STD_LOGIC'image(BUSINTERFACE_UPPER_DATA) & " Lower=" & STD_LOGIC'image(BUSINTERFACE_LOWER_DATA);
 			clock_delay;
 		end loop;
 

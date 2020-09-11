@@ -58,13 +58,13 @@ begin
 				report "Registers: Incrementing reg " & to_hstring(INCDEC_INDEX);
 --pragma synthesis_on
 				REGISTERS (to_integer(unsigned(INCDEC_INDEX))) <=
-					REGISTERS (to_integer(unsigned(INCDEC_INDEX))) + 1;
+					REGISTERS (to_integer(unsigned(INCDEC_INDEX))) + 2;
 			elsif (DEC = '1') then
 --pragma synthesis_off
 				report "Registers: Decrementing reg " & to_hstring(INCDEC_INDEX);
 --pragma synthesis_on
 				REGISTERS (to_integer(unsigned(INCDEC_INDEX))) <=
-					REGISTERS (to_integer(unsigned(INCDEC_INDEX))) - 1;
+					REGISTERS (to_integer(unsigned(INCDEC_INDEX))) - 2;
 			end if;
 		end if;
 	end process;
@@ -110,13 +110,11 @@ begin
 				report "PC: branching + " & to_hstring(INPUT);
 --pragma synthesis_on
 				PC <= PC + INPUT;
-			else
+			elsif (INCREMENT = '1') then
 --pragma synthesis_off
-				if (INCREMENT = '1') then
-					report "PC: incrementing";
-				end if;
+				report "PC: incrementing";
+				PC <= PC + 2;
 --pragma synthesis_on
-				PC <= PC + INCREMENT;
 			end if;
 
 		end if;

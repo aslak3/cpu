@@ -8,6 +8,7 @@ This is also a work in progress.
 
 * 16 bit address and databuses
 * 16 bit opcodes
+* Byte and word size memory accesses, with signed/unsigned extension on byte reads
 * Some instructions (LOADI, STOREI, JUMPs, BRANCHes, ALUI) have one following operand
 * 8 x 16 bit general purpose registers
 * 16 bit Program Counter
@@ -21,17 +22,18 @@ This is also a work in progress.
   - ALUI operates with an immediate operand, eg ADDI r0,0x1234
 * Conditional jumps: always, on each flag set or clear with don't cares
 * Nop instruction
+* Stacking: call/return and push and pop, with "quick" and multi register operations
 * No microcode: a coded state machine is used
+* Most instructions are 3 cycles
 
 # Additional limitations
 
 * No interrupts
-* No byte wide operations at least initially (the ALU has INCD/DECD instructions which will someday fascilitate byte/word increments)
 
 # TODO
 
 * A "good" custom cross assembler
-* Proper testbench for the CPU controller
+* Proper testbench for the controller
 * Eliminate empty states
 * Add more instructions!
   - Bit test (non distructive and)

@@ -11,6 +11,7 @@ entity cpu is
 		CLOCK : in STD_LOGIC;
 		RESET : in STD_LOGIC;
 		ADDRESS : out STD_LOGIC_VECTOR (15 downto 0);
+		CYCLE_TYPE_BYTE : out STD_LOGIC;
 		DATA_IN : in STD_LOGIC_VECTOR (15 downto 0);
 		DATA_OUT : out STD_LOGIC_VECTOR (15 downto 0);
 		READ : out STD_LOGIC;
@@ -24,6 +25,10 @@ architecture behavioural of cpu is
 	signal REGS_INPUT_MUX_SEL : T_REGS_INPUT_MUX_SEL;
 	signal ADDRESS_MUX_SEL : T_ADDRESS_MUX_SEL;
 	signal DATA_OUT_MUX_SEL : T_DATA_OUT_MUX_SEL;
+
+	signal CYCLE_TYPE : T_CYCLE_TYPE;
+
+	signal DATA_IN_EXTENDED : T_REG := (others => '0');
 
 	-- ALU
 	signal ALU_DO_OP : STD_LOGIC := '0';
@@ -65,6 +70,7 @@ begin
 		DATA_IN => DATA_IN,
 		READ => READ,
 		WRITE => WRITE,
+		CYCLE_TYPE => CYCLE_TYPE,
 
 		ALU_LEFT_MUX_SEL => ALU_LEFT_MUX_SEL,
 		ALU_RIGHT_MUX_SEL => ALU_RIGHT_MUX_SEL,
@@ -141,6 +147,14 @@ begin
 		OUTPUT => TEMPORARY_OUTPUT
 	);
 
+	-- Sign extend for data into a register, ie. LOADR, LOADRD
+	DATA_IN_EXTENDED <=
+		(8 to 15 => DATA_IN (7)) & DATA_IN (7 downto 0) when
+		(CYCLE_TYPE = CYCLE_TYPE_BYTE_SIGNED) else
+		(8 to 15 => '0') & DATA_IN (7 downto 0) when
+		(CYCLE_TYPE = CYCLE_TYPE_BYTE_UNSIGNED) else
+		DATA_IN;
+
 	ALU_LEFT_IN <= 	REGS_LEFT_OUTPUT when (ALU_LEFT_MUX_SEL = S_REGS_LEFT) else
 					DATA_IN;
 	ALU_RIGHT_IN <=	REGS_RIGHT_OUTPUT when (ALU_RIGHT_MUX_SEL = S_REGS_RIGHT) else
@@ -148,7 +162,7 @@ begin
 	REGS_INPUT <= 	ALU_RESULT when (REGS_INPUT_MUX_SEL = S_ALU_RESULT) else
 					REGS_RIGHT_OUTPUT when (REGS_INPUT_MUX_SEL = S_REGS_RIGHT) else
 					TEMPORARY_OUTPUT when (REGS_INPUT_MUX_SEL = S_TEMPORARY_OUTPUT) else
-					DATA_IN;
+					DATA_IN_EXTENDED;
 	ADDRESS <=		PC_OUTPUT when (ADDRESS_MUX_SEL = S_PC) else
 					REGS_LEFT_OUTPUT when (ADDRESS_MUX_SEL = S_REGS_LEFT) else
 					REGS_RIGHT_OUTPUT when (ADDRESS_MUX_SEL = S_REGS_RIGHT) else
@@ -156,6 +170,12 @@ begin
 					TEMPORARY_OUTPUT when (ADDRESS_MUX_SEL = S_TEMPORARY_OUTPUT) else
 					DATA_IN;
 	DATA_OUT <=		PC_OUTPUT when (DATA_OUT_MUX_SEL = S_PC) else
-					REGS_LEFT_OUTPUT when (DATA_OUT_MUX_SEL = S_REGS_LEFT) else REGS_RIGHT_OUTPUT;
+					REGS_LEFT_OUTPUT when (DATA_OUT_MUX_SEL = S_REGS_LEFT) else
+					REGS_RIGHT_OUTPUT;
+
+	-- Set the byte cycle state, if we are doing one.
+	CYCLE_TYPE_BYTE <= '1' when (
+		(CYCLE_TYPE = CYCLE_TYPE_BYTE_SIGNED or CYCLE_TYPE = CYCLE_TYPE_BYTE_UNSIGNED)
+	) else '0';
 
 end architecture;

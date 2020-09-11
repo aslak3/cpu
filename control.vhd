@@ -4,9 +4,9 @@ use IEEE.STD_LOGIC_1164.all;
 -- Instruction format
 --
 -- Moves Source and Destination Register (with optional immediate displacement):
--- [Opcode: 15 downto 10][Source: 5 downto 3][Destination: 2 downto 0]
+-- [Opcode: 15 downto 10][Byte: 9][Signed: 8][Source: 5 downto 3][Destination: 2 downto 0]
 -- Moves Destination Register:
--- [Opcode: 15 downto 10][Destination: 2 downto 0]
+-- [Opcode: 15 downto 10][Byte: 9][Signed: 8][Destination: 2 downto 0]
 -- Jump/Branch always:
 -- [Opcode 15 downto 10]
 -- Jump/Branch conditionally:
@@ -14,9 +14,13 @@ use IEEE.STD_LOGIC_1164.all;
 -- ALU Source and Destination Register
 -- [Opcode 15 dowonto 10][Operation: 9 downto 6][Source: 5 downto 3][Destination: 2 downto 0]
 -- ALU Destination Register only (or immediate source)
--- [Opcode 15 dowonto 10][Operation: 9 downto 6][Destination: 2 donwto 0]
+-- [Opcode 15 dowonto 10][Operation: 9 downto 6][Destination: 2 downto 0]
 -- Call and Return
 -- [Opcode: 15 downto 10][Stack Pointer: 5 downto 3][Stack Pointer: 2 downto 0]
+-- Push/Pop Quick:
+-- [Opcode 15 dowonto 10][Stack Pointer: 5 downto 3][Register: 2 downto 0]
+-- Push/Pop Multi (with immediate register bitmap)
+-- [Opcode 15 dowonto 10][Stack Pointer: 5 downto 3]
 
 package P_CONTROL is
 	subtype T_OPCODE is STD_LOGIC_VECTOR (5 downto 0);
@@ -47,10 +51,14 @@ package P_CONTROL is
 	constant OPCODE_POPMULTI :		T_OPCODE := "010111";
 
 	subtype T_FLOWTYPE is STD_LOGIC_VECTOR (2 downto 0);
+	constant FLOWTYPE_CARRY :		integer := 0;
+	constant FLOWTYPE_ZERO :		integer := 1;
+	constant FLOWTYPE_NEG :			integer := 2;
 
-	constant FLOWTYPE_CARRY :	integer := 0;
-	constant FLOWTYPE_ZERO :	integer := 1;
-	constant FLOWTYPE_NEG :		integer := 2;
+	subtype T_CYCLE_TYPE is STD_LOGIC_VECTOR (1 downto 0);
+	constant CYCLE_TYPE_WORD :			T_CYCLE_TYPE := "00";
+	constant CYCLE_TYPE_BYTE_UNSIGNED :	T_CYCLE_TYPE := "10";
+	constant CYCLE_TYPE_BYTE_SIGNED :	T_CYCLE_TYPE := "11";
 
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
@@ -92,6 +100,7 @@ entity control is
 		DATA_IN : in STD_LOGIC_VECTOR (15 downto 0);
 		READ : out STD_LOGIC;
 		WRITE : out STD_LOGIC;
+		CYCLE_TYPE : out T_CYCLE_TYPE;
 
 		ALU_LEFT_MUX_SEL : out T_ALU_LEFT_MUX_SEL;
 		ALU_RIGHT_MUX_SEL : out T_ALU_RIGHT_MUX_SEL;
@@ -130,6 +139,7 @@ architecture behavioural of control is
 	alias FLOW_FLAGS : T_FLOWTYPE is INSTRUCTION (8 downto 6);
 	alias FLOW_CARES : T_FLOWTYPE is INSTRUCTION (5 downto 3);
 	alias FLOW_POLARITY : T_FLOWTYPE is INSTRUCTION (2 downto 0);
+	alias INSTRUCTION_CYCLE_TYPE : T_CYCLE_TYPE is INSTRUCTION (9 downto 8);
 
 begin
 	-- Continually assign the right and left ALU indexes from the instruction.
@@ -161,7 +171,8 @@ begin
 			ALU_DO_OP <= '0';
 			READ <= '0';
 			WRITE <= '0';
-			TEMPORARY_WRITE <= '1';
+			CYCLE_TYPE <= CYCLE_TYPE_WORD;
+			TEMPORARY_WRITE <= '0';
 		elsif (CLOCK'Event and CLOCK = '1') then
 			READ <= '0';
 			WRITE <= '0';
@@ -178,45 +189,57 @@ begin
 			case STATE is
 				when S_FETCH1 =>
 					ADDRESS_MUX_SEL <= S_PC;
+					-- Instructions operate on words unless set otherwise
+					CYCLE_TYPE <= CYCLE_TYPE_WORD;
 					READ <= '1';
 					PC_INCREMENT <= '1';
 					STATE := S_FETCH2;
 
 				when S_FETCH2 =>
 					INSTRUCTION <= DATA_IN;
+
 --pragma synthesis_off
 					report "Control: Reading opcode " & to_string(DATA_IN (15 downto 10)) & " from " & T_ADDRESS_MUX_SEL'Image(ADDRESS_MUX_SEL);
 --pragma synthesis_on
 					case DATA_IN (15 downto 10) is
 						when OPCODE_NOP =>
+							report "Control: Opcode NOP";
 							STATE := S_FETCH1;
 
 						when OPCODE_JUMP | OPCODE_BRANCH =>
+							report "Control: Opcode JUMP/BRANCH";
 							STATE := S_FLOW1;
 
 						when OPCODE_LOADI =>
+							report "Control: Opcode LOADI";
 							STATE := S_LOADI1;
 
 						when OPCODE_STOREI =>
+							report "Control: Opcode STOREI";
 							STATE := S_STOREI1;
 
 						when OPCODE_CLEAR =>
+							report "Control: Opcode CLEAR";
 							REGS_CLEAR <= '1';
 							STATE := S_FETCH1;
 
 						when OPCODE_LOADR =>
+							report "Control: Opcode LOADR";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							STATE := S_LOADR1;
 
 						when OPCODE_STORER =>
+							report "Control: Opcode STORER";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 							STATE := S_STORER1;
 
 						when OPCODE_LOADRD =>
+							report "Control: Opcode LOADRD";
 							STATE := S_LOADRD1;
 
 						when OPCODE_STORERD =>
+							report "Control: Opcode STORERD";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
 							ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
@@ -226,6 +249,7 @@ begin
 							STATE := S_STORERD1;
 
 						when OPCODE_ALU =>
+							report "Control: Opcode ALU";
 							ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
 							ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
 							ALU_OP <= DATA_IN (9 downto 6);
@@ -233,6 +257,7 @@ begin
 							STATE := S_ALU1;
 
 						when OPCODE_ALUI =>
+							report "Control: Opcode ALUI";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
 							ALU_LEFT_MUX_SEL <= S_DATA_IN;
@@ -242,27 +267,32 @@ begin
 							STATE := S_ALU1;
 
 						when OPCODE_CALLJUMP | OPCODE_CALLBRANCH =>
+							report "Control: Opcode CALLJUMP/CALLBRACH";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							DATA_OUT_MUX_SEL <= S_PC;
 							REGS_DEC <= '1';
 							STATE := S_CALL1;
 
 						when OPCODE_RETURN =>
+							report "Control: Opcode RETURN";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							STATE := S_RETURN1;
 
 						when OPCODE_PUSHQUICK =>
+							report "Control: Opcode PUSHQUICK";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 							REGS_DEC <= '1';
 							STATE := S_PUSHQUICK1;
 
 						when OPCODE_POPQUICK =>
+							report "Control: Opcode POPQUICK";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							READ <= '1';
 							STATE := S_POPQUICK1;
 
 						when OPCODE_PUSHMULTI =>
+							report "Control: Opcode PUSHMULTI";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
 							STACKED := (others => '0');
@@ -270,6 +300,7 @@ begin
 							STATE := S_PUSHMULTI1;
 
 						when OPCODE_POPMULTI =>
+							report "Control: Opcode PULLMULTI";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
 							STACKED := (others => '0');
@@ -294,23 +325,27 @@ begin
 				when S_STOREI1 =>
 					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
+					TEMPORARY_WRITE <= '1';
 					STATE := S_STOREI2;
 
 				when S_STOREI2 =>
-					ADDRESS_MUX_SEL <= S_DATA_IN;
+					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 					WRITE <= '1';
+					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
 					PC_INCREMENT <= '1';
 					STATE := S_FETCH1;
 
 				when S_LOADR1 =>
 					READ <= '1';
+					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
 				when S_STORER1 =>
 					WRITE <= '1';
+					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
 					STATE := S_FETCH1;
 
 				when S_LOADRD1 =>
@@ -325,6 +360,7 @@ begin
 				when S_LOADRD2 =>
 					ADDRESS_MUX_SEL <= S_ALU_RESULT;
 					READ <= '1';
+					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
@@ -337,6 +373,7 @@ begin
 
 				when S_STORERD2 =>
 					WRITE <= '1';
+					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
 					STATE := S_FETCH1;
 
 				when S_FLOW1 =>

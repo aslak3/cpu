@@ -8,6 +8,8 @@ control:
 	vcom $(VCOMFLAGS) control.vhd
 cpu:
 	vcom $(VCOMFLAGS) cpu.vhd tb/cpu_tb.vhd
+businterface:
+	vcom $(VCOMFLAGS) businterface.vhd
 
 tests: registers_test alu_tests programcounter_tests cpu_tests
 

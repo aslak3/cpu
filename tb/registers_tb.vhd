@@ -99,7 +99,7 @@ begin
 
 		clock_delay;
 
-		assert REGS_LEFT_OUTPUT = x"0001" and REGS_RIGHT_OUTPUT = x"0001"
+		assert REGS_LEFT_OUTPUT = x"0002" and REGS_RIGHT_OUTPUT = x"0002"
 			report "Increment of reg 0 failed" severity failure;
 		REGS_DEC <= '1';
 		REGS_INCDEC_INDEX <= "000";
@@ -131,7 +131,7 @@ begin
 
 		clock_delay;
 
-		assert REGS_LEFT_OUTPUT = x"0001" and REGS_RIGHT_OUTPUT = x"4321"
+		assert REGS_LEFT_OUTPUT = x"0002" and REGS_RIGHT_OUTPUT = x"4321"
 			report "Simultainius increment of reg 0 / write of reg 1 failed" severity failure;
 
 		report "+++All good";
@@ -189,7 +189,7 @@ begin
 		clock_delay;
 		PC_INCREMENT <= '0';
 
-		assert PC_OUTPUT = x"0001"
+		assert PC_OUTPUT = x"0002"
 			report "PC increment" severity failure;
 
 		PC_JUMP <= '1';
@@ -203,11 +203,11 @@ begin
 		clock_delay;
 
 		PC_BRANCH <= '1';
-		PC_INPUT <= x"ffff";
+		PC_INPUT <= x"fffe";
 		clock_delay;
 		PC_BRANCH <= '0';
 
-		assert PC_OUTPUT = x"1233"
+		assert PC_OUTPUT = x"1232"
 			report "PC branch" severity failure;
 
 		clock_delay;
