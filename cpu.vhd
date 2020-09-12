@@ -10,10 +10,12 @@ entity cpu is
 	port (
 		CLOCK : in STD_LOGIC;
 		RESET : in STD_LOGIC;
-		ADDRESS : out STD_LOGIC_VECTOR (15 downto 0);
-		CYCLE_TYPE_BYTE : out STD_LOGIC;
+		ADDRESS : out STD_LOGIC_VECTOR (14 downto 0);
+		UPPER_DATA : out STD_LOGIC;
+		LOWER_DATA : out STD_LOGIC;
 		DATA_IN : in STD_LOGIC_VECTOR (15 downto 0);
 		DATA_OUT : out STD_LOGIC_VECTOR (15 downto 0);
+		BUS_ERROR : out STD_LOGIC;
 		READ : out STD_LOGIC;
 		WRITE : out STD_LOGIC
 	);
@@ -27,8 +29,13 @@ architecture behavioural of cpu is
 	signal DATA_OUT_MUX_SEL : T_DATA_OUT_MUX_SEL;
 
 	signal CYCLE_TYPE : T_CYCLE_TYPE;
+	signal CPU_DATA_IN_EXTENDED : T_REG := (others => '0');
 
-	signal DATA_IN_EXTENDED : T_REG := (others => '0');
+	-- CPU
+	signal CPU_ADDRESS : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+	signal CPU_DATA_IN : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+	signal CPU_DATA_OUT : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+	signal CPU_CYCLE_TYPE_BYTE : STD_LOGIC := '0';
 
 	-- ALU
 	signal ALU_DO_OP : STD_LOGIC := '0';
@@ -147,34 +154,51 @@ begin
 		OUTPUT => TEMPORARY_OUTPUT
 	);
 
+	businterface: entity work.businterface port map (
+		CPU_ADDRESS => CPU_ADDRESS,
+		CPU_CYCLE_TYPE_BYTE => CPU_CYCLE_TYPE_BYTE,
+		CPU_DATA_OUT => CPU_DATA_OUT,
+		CPU_DATA_IN => CPU_DATA_IN,
+
+		BUSINTERFACE_ADDRESS => ADDRESS,
+		BUSINTERFACE_DATA_IN => DATA_IN,
+		BUSINTERFACE_DATA_OUT => DATA_OUT,
+		BUSINTERFACE_UPPER_DATA => UPPER_DATA,
+		BUSINTERFACE_LOWER_DATA => LOWER_DATA,
+		BUSINTERFACE_ERROR => BUS_ERROR,
+
+		READ => READ,
+		WRITE => WRITE
+	);
+
 	-- Sign extend for data into a register, ie. LOADR, LOADRD
-	DATA_IN_EXTENDED <=
-		(8 to 15 => DATA_IN (7)) & DATA_IN (7 downto 0) when
+	CPU_DATA_IN_EXTENDED <=
+		(8 to 15 => CPU_DATA_IN (7)) & CPU_DATA_IN (7 downto 0) when
 		(CYCLE_TYPE = CYCLE_TYPE_BYTE_SIGNED) else
-		(8 to 15 => '0') & DATA_IN (7 downto 0) when
+		(8 to 15 => '0') & CPU_DATA_IN (7 downto 0) when
 		(CYCLE_TYPE = CYCLE_TYPE_BYTE_UNSIGNED) else
-		DATA_IN;
+		CPU_DATA_IN;
 
 	ALU_LEFT_IN <= 	REGS_LEFT_OUTPUT when (ALU_LEFT_MUX_SEL = S_REGS_LEFT) else
-					DATA_IN;
+					CPU_DATA_IN;
 	ALU_RIGHT_IN <=	REGS_RIGHT_OUTPUT when (ALU_RIGHT_MUX_SEL = S_REGS_RIGHT) else
-					DATA_IN;
+					CPU_DATA_IN;
 	REGS_INPUT <= 	ALU_RESULT when (REGS_INPUT_MUX_SEL = S_ALU_RESULT) else
 					REGS_RIGHT_OUTPUT when (REGS_INPUT_MUX_SEL = S_REGS_RIGHT) else
 					TEMPORARY_OUTPUT when (REGS_INPUT_MUX_SEL = S_TEMPORARY_OUTPUT) else
-					DATA_IN_EXTENDED;
-	ADDRESS <=		PC_OUTPUT when (ADDRESS_MUX_SEL = S_PC) else
+					CPU_DATA_IN_EXTENDED;
+	CPU_ADDRESS <=	PC_OUTPUT when (ADDRESS_MUX_SEL = S_PC) else
 					REGS_LEFT_OUTPUT when (ADDRESS_MUX_SEL = S_REGS_LEFT) else
 					REGS_RIGHT_OUTPUT when (ADDRESS_MUX_SEL = S_REGS_RIGHT) else
 					ALU_RESULT when (ADDRESS_MUX_SEL = S_ALU_RESULT) else
 					TEMPORARY_OUTPUT when (ADDRESS_MUX_SEL = S_TEMPORARY_OUTPUT) else
-					DATA_IN;
-	DATA_OUT <=		PC_OUTPUT when (DATA_OUT_MUX_SEL = S_PC) else
+					CPU_DATA_IN;
+	CPU_DATA_OUT <=	PC_OUTPUT when (DATA_OUT_MUX_SEL = S_PC) else
 					REGS_LEFT_OUTPUT when (DATA_OUT_MUX_SEL = S_REGS_LEFT) else
 					REGS_RIGHT_OUTPUT;
 
 	-- Set the byte cycle state, if we are doing one.
-	CYCLE_TYPE_BYTE <= '1' when (
+	CPU_CYCLE_TYPE_BYTE <= '1' when (
 		(CYCLE_TYPE = CYCLE_TYPE_BYTE_SIGNED or CYCLE_TYPE = CYCLE_TYPE_BYTE_UNSIGNED)
 	) else '0';
 
