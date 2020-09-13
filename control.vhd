@@ -7,10 +7,8 @@ use IEEE.STD_LOGIC_1164.all;
 -- [Opcode: 15 downto 10][Byte: 9][Signed: 8][Source: 5 downto 3][Destination: 2 downto 0]
 -- Moves Destination Register:
 -- [Opcode: 15 downto 10][Byte: 9][Signed: 8][Destination: 2 downto 0]
--- Jump/Branch always:
--- [Opcode 15 downto 10]
--- Jump/Branch conditionally:
--- [Opcode 15 downto 10][Flags: 8 downto 6][Care: 5 downto 3][Polarity: 2 downto 0]
+-- Jump/Branch:
+-- [Opcode 15 downto 10][Care: 5 downto 3][Polarity: 2 downto 0]
 -- ALU Source and Destination Register
 -- [Opcode 15 dowonto 10][Operation: 9 downto 6][Source: 5 downto 3][Destination: 2 downto 0]
 -- ALU Destination Register only (or immediate source)
@@ -136,7 +134,6 @@ architecture behavioural of control is
 
 	-- Convience aliases for opcodes fields.
 	alias OPCODE : T_OPCODE is INSTRUCTION (15 downto 10);
-	alias FLOW_FLAGS : T_FLOWTYPE is INSTRUCTION (8 downto 6);
 	alias FLOW_CARES : T_FLOWTYPE is INSTRUCTION (5 downto 3);
 	alias FLOW_POLARITY : T_FLOWTYPE is INSTRUCTION (2 downto 0);
 	alias INSTRUCTION_CYCLE_TYPE : T_CYCLE_TYPE is INSTRUCTION (9 downto 8);
@@ -378,16 +375,16 @@ begin
 
 				when S_FLOW1 =>
 --pragma synthesis_off
-					report "Control: Jumping/Branching condition=" & to_string(FLOW_FLAGS) & " Cares=" & to_string(FLOW_CARES) & " Polarity=" & to_string(FLOW_POLARITY);
+					report "Control: Jumping/Branching: Cares=" & to_string(FLOW_CARES) & " Polarity=" & to_string(FLOW_POLARITY);
 --pragma synthesis_on
 					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
 					if (
 						( FLOW_CARES = "000" ) or
 						(
-						( ( FLOW_FLAGS(FLOWTYPE_CARRY) = '1' and FLOW_POLARITY(FLOWTYPE_CARRY) = ALU_CARRY_OUT ) or FLOW_CARES(FLOWTYPE_CARRY) = '0' ) and
-						( ( FLOW_FLAGS(FLOWTYPE_ZERO) = '1' and FLOW_POLARITY(FLOWTYPE_ZERO) = ALU_ZERO_OUT ) or FLOW_CARES(FLOWTYPE_ZERO) = '0' ) and
-						( ( FLOW_FLAGS(FLOWTYPE_NEG) = '1' and FLOW_POLARITY(FLOWTYPE_NEG) = ALU_NEG_OUT ) or FLOW_CARES(FLOWTYPE_NEG ) = '0' )
+						( ( FLOW_POLARITY(FLOWTYPE_CARRY) = ALU_CARRY_OUT ) or FLOW_CARES(FLOWTYPE_CARRY) = '0' ) and
+						( ( FLOW_POLARITY(FLOWTYPE_ZERO) = ALU_ZERO_OUT ) or FLOW_CARES(FLOWTYPE_ZERO) = '0' ) and
+						( ( FLOW_POLARITY(FLOWTYPE_NEG) = ALU_NEG_OUT ) or FLOW_CARES(FLOWTYPE_NEG ) = '0' )
 						)
 					) then
 						report "Control: Jump/Branch taken";

@@ -67,21 +67,21 @@ R7=128
 	nop -> 0x0000
 
 	load.{width:loadtype}  {dst:reg}, #{value} ->
-		0b001000 @ width[9:8] @ 0b00 @ 0b000 @ dst[2:0] @ value[15:0]
+		0b001000 @ width[1:0] @ 0b00 @ 0b000 @ dst[2:0] @ value[15:0]
 	load.{width:loadtype}  {dst:reg}, ({src:reg}) ->
-		0b001010 @ width[9:8] @ 0b00 @ src[5:3] @ dst[2:0]
+		0b001010 @ width[1:0] @ 0b00 @ src[2:0] @ dst[2:0]
 	load.{width:loadtype}  {dst:reg}, ({offset},{src:reg}) ->
-		0b011010 @ width[9:8] @ 0b00 @ src[5:3] @ dst[2:0] @ offset[15:0]
+		0b011010 @ width[1:0] @ 0b00 @ src[2:0] @ dst[2:0] @ offset[15:0]
 
 	clear {dst:reg} ->
 		0b001100 @ 0b0000 @ 0b000 @ dst[2:0]
 
 	store.{width:storetype} {value}, {src:reg} ->
-		0b001001 @ width[9:8] @ 0b00 @ 0b000 @ src[2:0] @ value[15:0]
+		0b001001 @ width[1:0] @ 0b00 @ 0b000 @ src[2:0] @ value[15:0]
 	store.{width:storetype}  ({dst:reg}), {src:reg} ->
-		0b001011 @ width[9:8] @ 0b00 @ dst[5:3] @ src[2:0]
+		0b001011 @ width[1:0] @ 0b00 @ dst[2:0] @ src[2:0]
 	store.{width:storetype}  ({offset},{dst:reg}), {src:reg} ->
-		0b011011 @ width[9:8] @ 0b00 @ dst[5:3] @ src[2:0] @ offset[15:0]
+		0b011011 @ width[1:0] @ 0b00 @ dst[2:0] @ src[2:0] @ offset[15:0]
 
 	jump {target} ->
 		0b000010 @ 0b0000 @ 0b000000 @ target[15:0]
@@ -93,11 +93,11 @@ R7=128
 		0b000011 @ 0b0000 @ test[5:0] @ { target - pc - 2 }[15:0]
 
 	{aluop:twoargalu} {dst:reg}, {operand:reg} ->
-		0b001110 @ aluop[9:6] @ operand[5:3] @ dst[2:0]
+		0b001110 @ aluop[3:0] @ operand[2:0] @ dst[2:0]
 	{aluop:oneargalu} {dst:reg} ->
-		0b001110 @ aluop[9:6] @ 0b000 @ dst[2:0]
+		0b001110 @ aluop[3:0] @ 0b000 @ dst[2:0]
 	{aluop:twoargalu} {dst:reg}, #{value} ->
-		0b001111 @ aluop[9:6] @ 0b000 @ dst[2:0] @ value[15:0]
+		0b001111 @ aluop[3:0] @ 0b000 @ dst[2:0] @ value[15:0]
 
 	; 0b111 - use r7
 	calljump {target} ->
@@ -108,11 +108,11 @@ R7=128
 		0b010010 @ 0b0000 @ 0b111 @ 0b111
 
 	pushquick ({dst:reg}), {src:reg} ->
-		0b010100 @ 0b0000 @ dst[5:3] @ src[2:0]
-	popquick {src:reg}, ({dst:reg}) ->
-		0b010100 @ 0b0000 @ src[5:3] @ dst[2:0]
+		0b010100 @ 0b0000 @ dst[2:0] @ src[2:0]
+	popquick {dst:reg}, ({src:reg}) ->
+		0b010101 @ 0b0000 @ src[2:0] @ dst[2:0]
 	pushmulti ({dst:reg}), {src} ->
-		0b010100 @ 0b0000 @ dst[5:3] @ 0b000 @ 0b00000000 @ src[7:0]
+		0b010100 @ 0b0000 @ dst[2:0] @ 0b000 @ 0b00000000 @ src[7:0]
 	popmulti {dstregs:u8}, ({src:reg}) ->
-		0b010100 @ 0b0000 @ src[5:3] @ 0b000 @ 0b00000000 @ dstregs[7:0]
+		0b010100 @ 0b0000 @ src[2:0] @ 0b000 @ 0b00000000 @ dstregs[7:0]
 }
