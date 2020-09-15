@@ -48,21 +48,25 @@ R7=128
 		addc = 0x1
 		sub = 0x2
 		subc = 0x3
-		and = 0x6
-		or = 0x7
-		xor = 0x8
-		copy = 0xc
-		compare = 0xf
+		and = 0x4
+		or = 0x5
+		xor = 0x6
+		copy = 0x7
+		compare = 0x8
+		bit = 0x9
 	}
 	#tokendef oneargalu
 	{
-		inc = 0x4
-		dec = 0x5
-		not = 0x9
-		shiftleft = 0xa
-		shiftright = 0xb
-		negate = 0xd
-		swap = 0xe
+		inc = 0x0
+		dec = 0x1
+		incd = 0x2
+		decd = 0x3
+		not = 0x4
+		shiftleft = 0x5
+		shiftright = 0x6
+		negate = 0x7
+		swap = 0x8
+		test = 0x9
 	}
 
 	nop -> 0x0000
@@ -95,10 +99,10 @@ R7=128
 
 	{aluop:twoargalu} {dst:reg}, {operand:reg} ->
 		0b001110 @ aluop[3:0] @ operand[2:0] @ dst[2:0]
-	{aluop:oneargalu} {dst:reg} ->
-		0b001110 @ aluop[3:0] @ 0b000 @ dst[2:0]
 	{aluop:twoargalu} {dst:reg}, #{value} ->
 		0b001111 @ aluop[3:0] @ 0b000 @ dst[2:0] @ value[15:0]
+	{aluop:oneargalu} {dst:reg} ->
+		0b000001 @ aluop[3:0] @ 0b000 @ dst[2:0]
 
 	; 0b111 - use r7
 	calljump {target} ->

@@ -20,8 +20,8 @@ loop:		copy r2,r1			; copy the last written value
 		branchc done			; overflow? out
 		copy r5,r2			; copy it back over the running total
 		store.w (fib,r3),r1  		; save it in fib table using dest counter
-		add r3,#2			; increment alternative
-		dec r4				; decrement the space for fibs counter
+		incd r3				; increment alternative
+		sub r4,#1			; decrement the space for fibs counter
 		branchnz loop			; back if we have more room
 done:		load.w r5,#0x2a2a		; just so we can test store
 		store.w 0x0076,r5		; ...

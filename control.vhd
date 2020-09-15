@@ -36,8 +36,9 @@ package P_CONTROL is
 	constant OPCODE_LOADRD :		T_OPCODE := "011010";
 	constant OPCODE_STORERD :		T_OPCODE := "011011";
 
-	constant OPCODE_ALU :			T_OPCODE := "001110";
-	constant OPCODE_ALUI :			T_OPCODE := "001111";
+	constant OPCODE_ALUM :			T_OPCODE := "001110";
+	constant OPCODE_ALUMI :			T_OPCODE := "001111";
+	constant OPCODE_ALUS :			T_OPCODE := "000001";
 
 	constant OPCODE_CALLJUMP :		T_OPCODE := "010000";
 	constant OPCODE_CALLBRANCH :	T_OPCODE := "010001";
@@ -245,22 +246,29 @@ begin
 							ALU_DO_OP <= '1';
 							STATE := S_STORERD1;
 
-						when OPCODE_ALU =>
-							report "Control: Opcode ALU";
+						when OPCODE_ALUM =>
+							report "Control: Opcode ALUM";
 							ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
 							ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
-							ALU_OP <= DATA_IN (9 downto 6);
+							ALU_OP <= '0' & DATA_IN (9 downto 6);
 							ALU_DO_OP <= '1';
 							STATE := S_ALU1;
 
-						when OPCODE_ALUI =>
-							report "Control: Opcode ALUI";
+						when OPCODE_ALUMI =>
+							report "Control: Opcode ALUMI";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
 							ALU_LEFT_MUX_SEL <= S_DATA_IN;
 							ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
 							ALU_DO_OP <= '1';
-							ALU_OP <= DATA_IN (9 downto 6);
+							ALU_OP <= '0' & DATA_IN (9 downto 6);
+							STATE := S_ALU1;
+
+						when OPCODE_ALUS =>
+							report "Control: Opcode ALUS";
+							ALU_RIGHT_MUX_SEL <= S_REGS_RIGHT;
+							ALU_OP <= '1' & DATA_IN (9 downto 6);
+							ALU_DO_OP <= '1';
 							STATE := S_ALU1;
 
 						when OPCODE_CALLJUMP | OPCODE_CALLBRANCH =>
@@ -400,7 +408,7 @@ begin
 					STATE := S_FETCH1;
 
 				when S_ALU1 =>
-					if (OPCODE = OPCODE_ALUI) then
+					if (OPCODE = OPCODE_ALUMI) then
 						PC_INCREMENT <= '1';
 					end if;
 --pragma synthesis_off

@@ -10,15 +10,15 @@ delay:		dec r2			; dec delay
 
 printmessage:	load.w r2,#message	; get start of message in r2
 messageloop:	load.bu r3,(r2)		; get this letter in r3
-		compare r3,#0		; check letter for 0
-		jumpz printmessageo	; not zero? back for more
-		swap r3			; move letter
-		or r3,#0x0f		; attribute
+		test r3			; check letter for 0
+		jumpz printmessageo	; zero? out we go
+		swap r3			; move letter to high half
+		or r3,#0x0f		; attribute: white on black
 		inc r2			; next letter
 		store.w (r1),r3		; write letter
-		add r1,#2		; inc video pointer
+		incd r1			; inc video pointer
 		store.w 0x200,r1	; put the address-8000 on the lcd
-		branch messageloop
+		branch messageloop	; back to the next letter
 printmessageo:	return
 
 message:	#str "Hello, World!  \0"

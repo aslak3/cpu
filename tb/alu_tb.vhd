@@ -74,6 +74,7 @@ begin
 
 		end procedure;
 	begin
+		-- One destination, one operand
 		run_test(OP_ADD,	x"0001", x"0002" ,'0',	x"0003", '0', '0', '0');
 		run_test(OP_ADDC,	x"0001", x"0002" ,'0',	x"0003", '0', '0', '0');
 		run_test(OP_ADDC,	x"0001", x"0002" ,'1',	x"0004", '0', '0', '0');
@@ -89,14 +90,6 @@ begin
 		run_test(OP_SUBC,	x"0000", x"ffff" ,'1',	x"fffe", '0', '0', '1');
 		run_test(OP_SUBC,	x"ffff", x"ffff" ,'1',	x"ffff", '1', '0', '1');
 		run_test(OP_SUBC,	x"ffff", x"ffff" ,'0',	x"0000", '0', '1', '0');
-
-		run_test(OP_INC,	x"0000", x"0000" ,'0',	x"0001", '0', '0', '0');
-		run_test(OP_INC,	x"0000", x"7fff" ,'0',	x"8000", '0', '0', '1');
-		run_test(OP_INC,	x"0000", x"ffff" ,'0',	x"0000", '1', '1', '0');
-
-		run_test(OP_DEC,	x"0000", x"0000" ,'0',	x"ffff", '1', '0', '1');
-		run_test(OP_DEC,	x"0000", x"0001" ,'0',	x"0000", '0', '1', '0');
-		run_test(OP_DEC,	x"0000", x"ffff" ,'0',	x"fffe", '0', '0', '1');
 
 		run_test(OP_AND,	x"8080", x"ff00", '0',	x"8000", '0', '0', '1');
 		run_test(OP_AND,	x"0880", x"ff00", '0',	x"0800", '0', '0', '0');
@@ -114,6 +107,36 @@ begin
 		run_test(OP_XOR,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
 		run_test(OP_XOR,	x"1000", x"0001", '0',	x"1001", '0', '0', '0');
 
+		run_test(OP_COPY,	x"f0f0", x"0000", '0',	x"f0f0", '0', '0', '1');
+		run_test(OP_COPY,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
+		run_test(OP_COPY,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
+
+		run_test(OP_COMP,	x"0001", x"0002", '0', x"0002", '0', '0', '0');
+		run_test(OP_COMP,	x"0002", x"0001", '0', x"0001", '1', '0', '1');
+		run_test(OP_COMP,	x"0001", x"0001", '0', x"0001", '0', '1', '0');
+		run_test(OP_COMP,	x"0000", x"8000", '0', x"8000", '0', '0', '1');
+
+		run_test(OP_BIT,	x"8080", x"ff00", '0',	x"ff00", '0', '0', '1');
+		run_test(OP_BIT,	x"0880", x"ff00", '0',	x"ff00", '0', '0', '0');
+		run_test(OP_BIT,	x"8080", x"0808", '0',	x"0808", '0', '1', '0');
+
+		-- No operand
+		run_test(OP_INC,	x"0000", x"0000" ,'0',	x"0001", '0', '0', '0');
+		run_test(OP_INC,	x"0000", x"7fff" ,'0',	x"8000", '0', '0', '1');
+		run_test(OP_INC,	x"0000", x"ffff" ,'0',	x"0000", '1', '1', '0');
+
+		run_test(OP_DEC,	x"0000", x"0000" ,'0',	x"ffff", '1', '0', '1');
+		run_test(OP_DEC,	x"0000", x"0001" ,'0',	x"0000", '0', '1', '0');
+		run_test(OP_DEC,	x"0000", x"ffff" ,'0',	x"fffe", '0', '0', '1');
+
+		run_test(OP_INCD,	x"0000", x"ffff" ,'0',	x"0001", '1', '0', '0');
+		run_test(OP_INCD,	x"0000", x"7ffe" ,'0',	x"8000", '0', '0', '1');
+		run_test(OP_INCD,	x"0000", x"fffe" ,'0',	x"0000", '1', '1', '0');
+
+		run_test(OP_DECD,	x"0000", x"0001" ,'0',	x"ffff", '1', '0', '1');
+		run_test(OP_DECD,	x"0000", x"0002" ,'0',	x"0000", '0', '1', '0');
+		run_test(OP_DECD,	x"0000", x"0000" ,'0',	x"fffe", '1', '0', '1');
+
 		run_test(OP_NOT,	x"0000", x"8080", '0',	x"7f7f", '0', '0', '0');
 		run_test(OP_NOT,	x"0000", x"ffff", '0',	x"0000", '0', '1', '0');
 		run_test(OP_NOT,	x"0000", x"0000", '0',	x"ffff", '0', '0', '1');
@@ -127,18 +150,13 @@ begin
 		run_test(OP_RIGHT,	x"0000", x"ffff", '0',	x"7fff", '1', '0', '0');
 		run_test(OP_RIGHT,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
 
-		run_test(OP_COPY,	x"f0f0", x"0000", '0',	x"f0f0", '0', '0', '1');
-		run_test(OP_COPY,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
-		run_test(OP_COPY,	x"0000", x"0000", '0',	x"0000", '0', '1', '0');
-
 		run_test(OP_NEG,	x"0000", x"0001", '0', x"ffff", '1', '0', '1');
 		run_test(OP_NEG,	x"0000", x"ffff", '0', x"0001", '1', '0', '0');
 		run_test(OP_NEG,	x"0000", x"0000", '0', x"0000", '0', '1', '0');
 
-		run_test(OP_COMP,	x"0001", x"0002", '0', x"0002", '0', '0', '0');
-		run_test(OP_COMP,	x"0002", x"0001", '0', x"0001", '1', '0', '1');
-		run_test(OP_COMP,	x"0001", x"0001", '0', x"0001", '0', '1', '0');
-		run_test(OP_COMP,	x"0000", x"8000", '0', x"8000", '0', '0', '1');
+		run_test(OP_TEST,	x"0000", x"0001", '0', x"0001", '0', '0', '0');
+		run_test(OP_TEST,	x"0000", x"ffff", '0', x"ffff", '0', '0', '1');
+		run_test(OP_TEST,	x"0000", x"0000", '0', x"0000", '0', '1', '0');
 
 		report "+++All good";
 		std.env.finish;
