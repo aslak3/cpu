@@ -62,6 +62,7 @@ R7=128
 		shiftleft = 0xa
 		shiftright = 0xb
 		negate = 0xd
+		swap = 0xe
 	}
 
 	nop -> 0x0000

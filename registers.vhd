@@ -113,8 +113,8 @@ begin
 			elsif (INCREMENT = '1') then
 --pragma synthesis_off
 				report "PC: incrementing";
-				PC <= PC + 2;
 --pragma synthesis_on
+				PC <= PC + 2;
 			end if;
 
 		end if;

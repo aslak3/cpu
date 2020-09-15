@@ -22,6 +22,9 @@ entity cpu is
 end entity;
 
 architecture behavioural of cpu is
+	signal CLOCK_MAIN : STD_LOGIC := '0';
+	signal CLOCK_DELAYED : STD_LOGIC := '0';
+
 	signal ALU_LEFT_MUX_SEL : T_ALU_LEFT_MUX_SEL;
 	signal ALU_RIGHT_MUX_SEL : T_ALU_RIGHT_MUX_SEL;
 	signal REGS_INPUT_MUX_SEL : T_REGS_INPUT_MUX_SEL;
@@ -29,10 +32,13 @@ architecture behavioural of cpu is
 	signal DATA_OUT_MUX_SEL : T_DATA_OUT_MUX_SEL;
 
 	signal CYCLE_TYPE : T_CYCLE_TYPE;
+	signal CPU_READ : STD_LOGIC := '0';
+	signal CPU_WRITE : STD_LOGIC := '0';
 	signal CPU_DATA_IN_EXTENDED : T_REG := (others => '0');
 
 	-- CPU
 	signal CPU_ADDRESS : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+	signal CPU_BUS_ACTIVE : STD_LOGIC := '0';
 	signal CPU_DATA_IN : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 	signal CPU_DATA_OUT : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 	signal CPU_CYCLE_TYPE_BYTE : STD_LOGIC := '0';
@@ -69,14 +75,19 @@ architecture behavioural of cpu is
 	-- Temporary
 	signal TEMPORARY_WRITE : STD_LOGIC := '0';
 	signal TEMPORARY_OUTPUT : T_REG := (others => '0');
-
 begin
-	control: entity work.control port map (
+	quadclock: entity work.quadclock port map (
 		CLOCK => CLOCK,
+		CLOCK_MAIN => CLOCK_MAIN,
+		CLOCK_DELAYED => CLOCK_DELAYED
+	);
+
+	control: entity work.control port map (
+		CLOCK => CLOCK_MAIN,
 		RESET => RESET,
 		DATA_IN => DATA_IN,
-		READ => READ,
-		WRITE => WRITE,
+		READ => CPU_READ,
+		WRITE => CPU_WRITE,
 		CYCLE_TYPE => CYCLE_TYPE,
 
 		ALU_LEFT_MUX_SEL => ALU_LEFT_MUX_SEL,
@@ -108,7 +119,7 @@ begin
 	);
 
 	alu: entity work.alu port map (
-		CLOCK => CLOCK,
+		CLOCK => CLOCK_MAIN,
 		DO_OP => ALU_DO_OP,
 		OP => ALU_OP,
 		LEFT => ALU_LEFT_IN,
@@ -121,7 +132,7 @@ begin
 	);
 
 	registers: entity work.registers port map (
-		CLOCK => CLOCK,
+		CLOCK => CLOCK_MAIN,
 		RESET => RESET,
 		CLEAR => REGS_CLEAR,
 		WRITE => REGS_WRITE,
@@ -137,7 +148,7 @@ begin
 	);
 
 	programcounter: entity work.programcounter port map (
-		CLOCK => CLOCK,
+		CLOCK => CLOCK_MAIN,
 		RESET => RESET,
 		JUMP => PC_JUMP,
 		BRANCH => PC_BRANCH,
@@ -147,7 +158,7 @@ begin
 	);
 
 	temporary: entity work.temporary port map (
-		CLOCK => CLOCK,
+		CLOCK => CLOCK_MAIN,
 		RESET => RESET,
 		WRITE => TEMPORARY_WRITE,
 		INPUT => DATA_IN,
@@ -155,10 +166,16 @@ begin
 	);
 
 	businterface: entity work.businterface port map (
+		CLOCK => CLOCK_DELAYED,
+		RESET => RESET,
+		
 		CPU_ADDRESS => CPU_ADDRESS,
+		CPU_BUS_ACTIVE => CPU_BUS_ACTIVE,
 		CPU_CYCLE_TYPE_BYTE => CPU_CYCLE_TYPE_BYTE,
 		CPU_DATA_OUT => CPU_DATA_OUT,
 		CPU_DATA_IN => CPU_DATA_IN,
+		CPU_READ => CPU_READ,
+		CPU_WRITE => CPU_WRITE,
 
 		BUSINTERFACE_ADDRESS => ADDRESS,
 		BUSINTERFACE_DATA_IN => DATA_IN,
@@ -166,9 +183,8 @@ begin
 		BUSINTERFACE_UPPER_DATA => UPPER_DATA,
 		BUSINTERFACE_LOWER_DATA => LOWER_DATA,
 		BUSINTERFACE_ERROR => BUS_ERROR,
-
-		READ => READ,
-		WRITE => WRITE
+		BUSINTERFACE_READ => READ,
+		BUSINTERFACE_WRITE => WRITE
 	);
 
 	-- Sign extend for data into a register, ie. LOADR, LOADRD
@@ -201,5 +217,6 @@ begin
 	CPU_CYCLE_TYPE_BYTE <= '1' when (
 		(CYCLE_TYPE = CYCLE_TYPE_BYTE_SIGNED or CYCLE_TYPE = CYCLE_TYPE_BYTE_UNSIGNED)
 	) else '0';
+	CPU_BUS_ACTIVE <= '1' when (CPU_READ = '1' or CPU_WRITE = '1') else '0';
 
 end architecture;
