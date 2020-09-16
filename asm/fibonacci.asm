@@ -10,8 +10,7 @@ start:		clear r5			; the running total
 		load.w r1,#foo			; r1 will be the intial value
 		load.w r1,(2,r1)		; initial value
 		load.w r3,#0			; destination counter
-		load.w r4,#length		; space for our fibs
-		load.w r4,(r4)			; load it
+		load.w r4,length		; space for our fibs
 		pushquick (r7),r4
 		clear r4
 		popquick r4,(r7)

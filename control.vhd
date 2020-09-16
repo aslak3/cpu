@@ -28,8 +28,9 @@ package P_CONTROL is
 	constant OPCODE_JUMP :			T_OPCODE := "000010";
 	constant OPCODE_BRANCH :		T_OPCODE := "000011";
 
-	constant OPCODE_LOADI :			T_OPCODE := "001000";
-	constant OPCODE_STOREI :		T_OPCODE := "001001";
+	constant OPCODE_LOADI :			T_OPCODE := "000100";
+	constant OPCODE_LOADM :			T_OPCODE := "001000";
+	constant OPCODE_STOREM :		T_OPCODE := "001001";
 	constant OPCODE_CLEAR :			T_OPCODE := "001100";
 	constant OPCODE_LOADR :			T_OPCODE := "001010";
 	constant OPCODE_STORER :		T_OPCODE := "001011";
@@ -61,10 +62,11 @@ package P_CONTROL is
 
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
-		S_FLOW1,
-		S_LOADI1, S_STOREI1,
-		S_LOADR1, S_STORER1, S_STOREI2,
+		S_LOADI1,
+		S_LOADM1,S_LOADM2, S_STOREM1, S_STOREM2,
+		S_LOADR1, S_STORER1,
 		S_LOADRD1, S_LOADRD2, S_STORERD1, S_STORERD2,
+		S_FLOW1,
 		S_ALU1,
 		S_CALL1, S_CALL2, S_RETURN1,
 		S_PUSHQUICK1, S_POPQUICK1,
@@ -204,17 +206,17 @@ begin
 							report "Control: Opcode NOP";
 							STATE := S_FETCH1;
 
-						when OPCODE_JUMP | OPCODE_BRANCH =>
-							report "Control: Opcode JUMP/BRANCH";
-							STATE := S_FLOW1;
-
 						when OPCODE_LOADI =>
 							report "Control: Opcode LOADI";
 							STATE := S_LOADI1;
 
-						when OPCODE_STOREI =>
-							report "Control: Opcode STOREI";
-							STATE := S_STOREI1;
+						when OPCODE_LOADM =>
+							report "Control: Opcode LOADM";
+							STATE := S_LOADM1;
+
+						when OPCODE_STOREM =>
+							report "Control: Opcode STOREM";
+							STATE := S_STOREM1;
 
 						when OPCODE_CLEAR =>
 							report "Control: Opcode CLEAR";
@@ -245,6 +247,10 @@ begin
 							ALU_OP <= OP_ADD;
 							ALU_DO_OP <= '1';
 							STATE := S_STORERD1;
+
+						when OPCODE_JUMP | OPCODE_BRANCH =>
+							report "Control: Opcode JUMP/BRANCH";
+							STATE := S_FLOW1;
 
 						when OPCODE_ALUM =>
 							report "Control: Opcode ALUM";
@@ -327,13 +333,28 @@ begin
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
-				when S_STOREI1 =>
+				when S_LOADM1 =>
 					ADDRESS_MUX_SEL <= S_PC;
 					READ <= '1';
 					TEMPORARY_WRITE <= '1';
-					STATE := S_STOREI2;
+					STATE := S_LOADM2;
 
-				when S_STOREI2 =>
+				when S_LOADM2 =>
+					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
+					READ <= '1';
+					REGS_INPUT_MUX_SEL <= S_DATA_IN;
+					PC_INCREMENT <= '1';
+					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
+					REGS_WRITE <= '1';
+					STATE := S_FETCH1;
+
+				when S_STOREM1 =>
+					ADDRESS_MUX_SEL <= S_PC;
+					READ <= '1';
+					TEMPORARY_WRITE <= '1';
+					STATE := S_STOREM2;
+
+				when S_STOREM2 =>
 					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 					WRITE <= '1';

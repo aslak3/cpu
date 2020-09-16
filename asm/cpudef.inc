@@ -71,21 +71,24 @@ R7=128
 
 	nop -> 0x0000
 
-	load.{width:loadtype}  {dst:reg}, #{value} ->
-		0b001000 @ width[1:0] @ 0b00 @ 0b000 @ dst[2:0] @ value[15:0]
-	load.{width:loadtype}  {dst:reg}, ({src:reg}) ->
+	load.{width:loadtype} {dst:reg}, #{value} ->
+		0b000100 @ width[1:0] @ 0b00 @ 0b000 @ dst[2:0] @ value[15:0]
+
+	load.{width:loadtype} {dst:reg}, {addr} ->
+		0b001000 @ width[1:0] @ 0b00 @ 0b000 @ dst[2:0] @ addr[15:0]
+	load.{width:loadtype} {dst:reg}, ({src:reg}) ->
 		0b001010 @ width[1:0] @ 0b00 @ src[2:0] @ dst[2:0]
-	load.{width:loadtype}  {dst:reg}, ({offset},{src:reg}) ->
+	load.{width:loadtype} {dst:reg}, ({offset},{src:reg}) ->
 		0b011010 @ width[1:0] @ 0b00 @ src[2:0] @ dst[2:0] @ offset[15:0]
 
 	clear {dst:reg} ->
 		0b001100 @ 0b0000 @ 0b000 @ dst[2:0]
 
-	store.{width:storetype} {value}, {src:reg} ->
-		0b001001 @ width[1:0] @ 0b00 @ 0b000 @ src[2:0] @ value[15:0]
-	store.{width:storetype}  ({dst:reg}), {src:reg} ->
+	store.{width:storetype} {addr}, {src:reg} ->
+		0b001001 @ width[1:0] @ 0b00 @ 0b000 @ src[2:0] @ addr[15:0]
+	store.{width:storetype} ({dst:reg}), {src:reg} ->
 		0b001011 @ width[1:0] @ 0b00 @ dst[2:0] @ src[2:0]
-	store.{width:storetype}  ({offset},{dst:reg}), {src:reg} ->
+	store.{width:storetype} ({offset},{dst:reg}), {src:reg} ->
 		0b011011 @ width[1:0] @ 0b00 @ dst[2:0] @ src[2:0] @ offset[15:0]
 
 	jump {target} ->
