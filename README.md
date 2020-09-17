@@ -1,30 +1,34 @@
 # 16 bit processor in VHDL
 
-This is a project for learning, which is pretty much useless except for anyone interested in how a trivial processor could be implemented. That said, I think it's cool.
+This is a project for self-learning, and is pretty much useless except for
+anyone interested in how a simple processor could be implemented.  That
+said, I think it's cool.
 
-This is also a work in progress.
+This is of course a work in progress.
 
 # Summary of features
 
+* Load/Store: only loads and stores access memory
 * 16 bit address and databuses
 * 16 bit opcodes
 * Byte and word size memory accesses, with signed/unsigned extension on byte reads
-* Some instructions (LOADI, STOREI, JUMPs, BRANCHes, ALUI) have one following operand
+* Some opcodes (LOADI, STOREI, JUMPs, BRANCHes, ALUI, CALLs) have one following operand
 * 8 x 16 bit general purpose registers
 * 16 bit Program Counter
 * Load and store instructions operate either through a register or an immediate address
   - With optional immediate displacement
-* Clear instruction, though it's currently no faster then an XOR
+* Clear instruction
 * Simple status bits: zero, negative, carry
-* ALU operations are: add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right, copy, negation, compare
+* ALU operations are
+  - add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right, copy, negation, compare, bit test, compare with zero
 * ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST
-  - where both are registers
-  - ALUI operates with an immediate operand, eg ADDI r0,0x1234
-* Conditional jumps: always, on each flag set or clear with don't cares
+  - ALUI operates with an immediate operand
+* Conditional jumps and branches: always, on each flag set or clear with don't cares
 * Nop instruction
 * Stacking: call/return and push and pop, with "quick" and multi register operations
 * No microcode: a coded state machine is used
-* Most instructions are 3 cycles
+* Most instructions take 3 cycles
+* CustomASM (https://github.com/hlorenzi/customasm) is the current assembler
 
 # Additional limitations
 
@@ -32,16 +36,17 @@ This is also a work in progress.
 
 # TODO
 
-* A "good" custom cross assembler
-* Proper testbench for the controller
+* Testbench for the controller
 * Eliminate empty states
 * Add more instructions!
-  - Bit test (non distructive and)
-  - Relative addressing with the PC
+  - Relative addressing on loads and stores with the PC
+  - Software traps
+  - Multiply and divide
   - ....
-* Properly implement twos complement
+* Properly implement twos-complement
   - Arithmatic shifts
-* Better status bits: not currently settable, nor are they changed on anything other then an ALU instruction
+* Better status bits: not currently settable via an opcode, nor are they changed on anything other then an ALU instruction
+* Overflow on signed arithmatic is not yet implemented
 
 # Top level RTL diagram (OUT OF DATE)
 
