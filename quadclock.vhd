@@ -12,13 +12,12 @@ end entity;
 architecture behavioral of quadclock is
 	signal COUNTER : STD_LOGIC := '0';
 begin
-	process (CLOCK)
+	process (CLOCK, COUNTER)
 	begin
 		if (CLOCK'Event and CLOCK = '1') then
 			COUNTER <= not COUNTER;
 		end if;
+		CLOCK_MAIN <= COUNTER;
+		CLOCK_DELAYED <= not (COUNTER xor CLOCK);
 	end process;
-
-	CLOCK_MAIN <= COUNTER;
-	CLOCK_DELAYED <= COUNTER xor CLOCK;
 end architecture;
