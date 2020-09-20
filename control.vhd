@@ -62,15 +62,14 @@ package P_CONTROL is
 
 	type T_STATE is (
 		S_FETCH1, S_FETCH2,
-		S_LOADI1,
-		S_LOADM1,S_LOADM2, S_STOREM1, S_STOREM2,
-		S_LOADR1, S_STORER1,
-		S_LOADRD1, S_LOADRD2, S_STORERD1, S_STORERD2,
+		S_LOADM1, S_STOREM1,
+		S_LOADR1,
+		S_LOADRD1, S_STORERD1, S_STORERD2,
 		S_FLOW1,
 		S_ALU1,
-		S_CALL1, S_CALL2, S_RETURN1,
+		S_CALL1, S_CALL2,
 		S_PUSHQUICK1, S_POPQUICK1,
-		S_PUSHMULTI1, S_PUSHMULTI2, S_POPMULTI1, S_POPMULTI2
+		S_PUSHMULTI1, S_PUSHMULTI2, S_POPMULTI1, S_POPMULTI2, S_POPMULTI3
 	);
 
 	type T_ALU_LEFT_MUX_SEL is
@@ -208,14 +207,25 @@ begin
 
 						when OPCODE_LOADI =>
 							report "Control: Opcode LOADI";
-							STATE := S_LOADI1;
+							ADDRESS_MUX_SEL <= S_PC;
+							READ <= '1';
+							PC_INCREMENT <= '1';
+							REGS_INPUT_MUX_SEL <= S_DATA_IN;
+							REGS_WRITE <= '1';
+							STATE := S_FETCH1;
 
 						when OPCODE_LOADM =>
 							report "Control: Opcode LOADM";
+							ADDRESS_MUX_SEL <= S_PC;
+							READ <= '1';
+							TEMPORARY_WRITE <= '1';
 							STATE := S_LOADM1;
 
 						when OPCODE_STOREM =>
 							report "Control: Opcode STOREM";
+							ADDRESS_MUX_SEL <= S_PC;
+							READ <= '1';
+							TEMPORARY_WRITE <= '1';
 							STATE := S_STOREM1;
 
 						when OPCODE_CLEAR =>
@@ -232,10 +242,18 @@ begin
 							report "Control: Opcode STORER";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
 							DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
-							STATE := S_STORER1;
+							WRITE <= '1';
+							CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
+							STATE := S_FETCH1;
 
 						when OPCODE_LOADRD =>
 							report "Control: Opcode LOADRD";
+							ADDRESS_MUX_SEL <= S_PC;
+							READ <= '1';
+							ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
+							ALU_RIGHT_MUX_SEL <= S_DATA_IN;
+							ALU_OP <= OP_ADD;
+							ALU_DO_OP <= '1';
 							STATE := S_LOADRD1;
 
 						when OPCODE_STORERD =>
@@ -250,6 +268,8 @@ begin
 
 						when OPCODE_JUMP | OPCODE_BRANCH =>
 							report "Control: Opcode JUMP/BRANCH";
+							ADDRESS_MUX_SEL <= S_PC;
+							READ <= '1';
 							STATE := S_FLOW1;
 
 						when OPCODE_ALUM =>
@@ -287,7 +307,10 @@ begin
 						when OPCODE_RETURN =>
 							report "Control: Opcode RETURN";
 							ADDRESS_MUX_SEL <= S_REGS_LEFT;
-							STATE := S_RETURN1;
+							READ <= '1';
+							REGS_INC <= '1';
+							PC_JUMP <= '1';
+							STATE := S_FETCH1;
 
 						when OPCODE_PUSHQUICK =>
 							report "Control: Opcode PUSHQUICK";
@@ -311,7 +334,7 @@ begin
 							STATE := S_PUSHMULTI1;
 
 						when OPCODE_POPMULTI =>
-							report "Control: Opcode PULLMULTI";
+							report "Control: Opcode POPMULTI";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
 							STACKED := (others => '0');
@@ -325,21 +348,7 @@ begin
 							STATE := S_FETCH1;
 					end case;
 
-				when S_LOADI1 =>
-					ADDRESS_MUX_SEL <= S_PC;
-					READ <= '1';
-					PC_INCREMENT <= '1';
-					REGS_INPUT_MUX_SEL <= S_DATA_IN;
-					REGS_WRITE <= '1';
-					STATE := S_FETCH1;
-
 				when S_LOADM1 =>
-					ADDRESS_MUX_SEL <= S_PC;
-					READ <= '1';
-					TEMPORARY_WRITE <= '1';
-					STATE := S_LOADM2;
-
-				when S_LOADM2 =>
 					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					READ <= '1';
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
@@ -349,12 +358,6 @@ begin
 					STATE := S_FETCH1;
 
 				when S_STOREM1 =>
-					ADDRESS_MUX_SEL <= S_PC;
-					READ <= '1';
-					TEMPORARY_WRITE <= '1';
-					STATE := S_STOREM2;
-
-				when S_STOREM2 =>
 					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					DATA_OUT_MUX_SEL <= S_REGS_RIGHT;
 					WRITE <= '1';
@@ -369,21 +372,7 @@ begin
 					REGS_WRITE <= '1';
 					STATE := S_FETCH1;
 
-				when S_STORER1 =>
-					WRITE <= '1';
-					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
-					STATE := S_FETCH1;
-
 				when S_LOADRD1 =>
-					ADDRESS_MUX_SEL <= S_PC;
-					READ <= '1';
-					ALU_LEFT_MUX_SEL <= S_REGS_LEFT;
-					ALU_RIGHT_MUX_SEL <= S_DATA_IN;
-					ALU_OP <= OP_ADD;
-					ALU_DO_OP <= '1';
-					STATE := S_LOADRD2;
-
-				when S_LOADRD2 =>
 					ADDRESS_MUX_SEL <= S_ALU_RESULT;
 					READ <= '1';
 					CYCLE_TYPE <= INSTRUCTION_CYCLE_TYPE;
@@ -406,8 +395,6 @@ begin
 --pragma synthesis_off
 					report "Control: Jumping/Branching: Cares=" & to_string(FLOW_CARES) & " Polarity=" & to_string(FLOW_POLARITY);
 --pragma synthesis_on
-					ADDRESS_MUX_SEL <= S_PC;
-					READ <= '1';
 					if (
 						( FLOW_CARES = "000" ) or
 						(
@@ -456,12 +443,6 @@ begin
 					end if;
 					STATE := S_FETCH1;
 
-				when S_RETURN1 =>
-					READ <= '1';
-					REGS_INC <= '1';
-					PC_JUMP <= '1';
-					STATE := S_FETCH1;
-
 				when S_PUSHQUICK1 =>
 					WRITE <= '1';
 					STATE := S_FETCH1;
@@ -502,6 +483,9 @@ begin
 					end if;
 
 				when S_POPMULTI1 =>
+					STATE := S_POPMULTI2;
+
+				when S_POPMULTI2 =>
 					for REG_NUMBER in 7 downto 0 loop
 						if (TEMPORARY_OUTPUT (REG_NUMBER) = '1' and STACKED (REG_NUMBER) = '0') then
 							-- Get the first register we haven't yet unstacked. This is done in then
@@ -516,9 +500,9 @@ begin
 							exit;
 						end if;
 					end loop;
-					STATE := S_POPMULTI2;
+					STATE := S_POPMULTI3;
 
-				when S_POPMULTI2 =>
+				when S_POPMULTI3 =>
 					REGS_INC <= '1';
 					if (TEMPORARY_OUTPUT (7 downto 0) = STACKED) then
 						PC_INCREMENT <= '1';

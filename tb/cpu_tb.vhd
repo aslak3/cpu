@@ -1,23 +1,4 @@
 library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-
--- Types for the registers presented
-
-package P_TB_CPU is
-	type T_SELECTNAMES is (
-		SELECT_RAM,
-		SELECT_LED,
-		SELECT_SEVENSEG,
-		SELECT_VGA_CONTROL,
-		SELECT_BUZZER,
-		SELECT_VGA_MEMORY
-	);
-	type T_SELECT_LOGIC is array (T_SELECTNAMES) of STD_LOGIC;
-end package;
-
----
-
-library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -49,50 +30,12 @@ end architecture;
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
-use work.P_TB_CPU.all;
-
-entity addressdecoder is
-	port (
-		CLOCK : in STD_LOGIC;
-		ADDRESS : in STD_LOGIC_VECTOR (7 downto 0);
-		SELECTS : out T_SELECT_LOGIC
-	);
-end entity;
-
-architecture behaviorual of addressdecoder is
-begin
-	process (CLOCK)
-	begin
-		if (CLOCK'Event and CLOCK = '1') then
-			SELECTS <= (others => '0');
-			case? ADDRESS is
-				when x"00" =>
-					SELECTS(SELECT_RAM) <= '1';
-				when x"01" =>
-					SELECTS(SELECT_LED) <= '1';
-				when x"02" =>
-					SELECTS(SELECT_SEVENSEG) <= '1';
-				when x"03" =>
-					SELECTS(SELECT_VGA_CONTROL) <= '1';
-				when x"04" =>
-					SELECTS(SELECT_BUZZER) <= '1';
-				when "1-------" =>
-					SELECTS(SELECT_VGA_MEMORY) <= '1';
-				when others =>
-			end case?;
-		end if;
-	end process;
-end architecture;
-
----
-
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.ALL;
 use STD.textio.all;
 use IEEE.std_logic_textio.all;
 use work.P_CONTROL.all;
 use work.P_TB_CPU.all;
+use work.P_RAM.all;
 
 entity cpu_tb is
 end entity;
@@ -100,9 +43,9 @@ end entity;
 architecture behavioral of cpu_tb is
 	signal CLOCK50M : STD_LOGIC;
 	signal CLOCK : STD_LOGIC;
+	signal CLOCK_MAIN : STD_LOGIC;
+	signal CLOCK_DELAYED : STD_LOGIC;
 	signal RESET : STD_LOGIC := '0';
-
-	signal AD_SELECTS : T_SELECT_LOGIC;
 
 	signal ADDRESS : STD_LOGIC_VECTOR (14 downto 0);
 	signal DATA_IN : STD_LOGIC_VECTOR (15 downto 0);
@@ -112,140 +55,6 @@ architecture behavioral of cpu_tb is
 	signal BUS_ERROR : STD_LOGIC;
 	signal READ : STD_LOGIC;
 	signal WRITE : STD_LOGIC;
-
-	type MEM is ARRAY (0 to 127) of STD_LOGIC_VECTOR (15 downto 0);
-	signal RAM : MEM := (
-
-x"1000",
-x"f00f",
-x"1007",
-x"0080",
-x"443f",
-x"0006",
-x"0c00",
-x"fffe",
-x"403f",
-x"0016",
-x"483f",
-x"3005",
-x"1001",
-x"005c",
-x"6809",
-x"0002",
-x"1003",
-x"0000",
-x"2004",
-x"0060",
-x"503c",
-x"3004",
-x"543c",
-x"39ca",
-x"3829",
-x"0c24",
-x"0012",
-x"39d5",
-x"6c19",
-x"0062",
-x"0483",
-x"3c84",
-x"0001",
-x"0c10",
-x"ffea",
-x"1005",
-x"2a2a",
-x"2405",
-x"0076",
-x"1005",
-x"aa55",
-x"1001",
-x"0074",
-x"2c0d",
-x"0800",
-x"000c",
-x"483f",
-x"0001",
-x"0008",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000",
-x"0000"
-
-);
 
 begin
 	process
@@ -262,14 +71,10 @@ begin
 		CLOCKOUT => CLOCK
 	);
 
-	addressdecoder: entity work.addressdecoder port map (
-		CLOCK => CLOCK50M,
-		ADDRESS => ADDRESS (14 downto 7),
-		SELECTS => AD_SELECTS
-	);
-
 	dut: entity work.cpu port map (
 		CLOCK => CLOCK,
+		CLOCK_MAIN => CLOCK_MAIN,
+		CLOCK_DELAYED => CLOCK_DELAYED,
 		RESET => RESET,
 		ADDRESS => ADDRESS,
 		DATA_IN => DATA_IN,
@@ -281,30 +86,43 @@ begin
 		WRITE => WRITE
 	);
 
-	process (CLOCK50M)
+	process (CLOCK_DELAYED)
 	begin
-		if (CLOCK50M'Event and CLOCK50M = '1') then
+		if (CLOCK_DELAYED'Event and CLOCK_DELAYED = '1') then
+			report "Address=" & to_hstring(ADDRESS & '0') &
+				" Read=" & STD_LOGIC'image(READ) & " Write=" & STD_LOGIC'image(WRITE) &
+				" Data Out=" & to_hstring(DATA_OUT) & " Data In=" & to_hstring(DATA_IN) &
+				" Upper=" & STD_LOGIC'image(UPPER_DATA) & " Lower=" & STD_LOGIC'image(LOWER_DATA);
+
 			if (WRITE = '1') then
-				if (AD_SELECTS(SELECT_RAM) = '1') then
+				if (ADDRESS (14 downto 12) = "000") then
 					if (UPPER_DATA = '1') then
+						report "Writing upper to " & to_hstring(ADDRESS & '0');
 						RAM(to_integer(unsigned(ADDRESS))) (15 downto 8) <= DATA_OUT (15 downto 8);
 					end if;
 					if (LOWER_DATA = '1') then
+						report "Writing lower to " & to_hstring(ADDRESS & '1');
 						RAM(to_integer(unsigned(ADDRESS))) (7 downto 0) <= DATA_OUT (7 downto 0);
 					end if;
-				elsif (AD_SELECTS(SELECT_LED) = '1') then
+				elsif (ADDRESS (14 downto 7) = "01000000") then
 					report "Setting LED to " & STD_LOGIC'Image(DATA_OUT (0));
-				elsif (AD_SELECTS(SELECT_SEVENSEG) = '1') then
+				elsif (ADDRESS (14 downto 7) = "01000001") then
 					report "Setting 7 Segment to " & to_hstring(DATA_OUT);
-				elsif (AD_SELECTS(SELECT_BUZZER) = '1') then
+				elsif (ADDRESS (14 downto 7) = "01000010") then
 					report "Setting Buzzer " & to_hstring(DATA_OUT);
-				elsif (AD_SELECTS(SELECT_VGA_MEMORY) = '1') then
-					report "Writing to video memory " & to_hstring(DATA_OUT) & " @ " & to_hstring(ADDRESS);
+				elsif (ADDRESS (14) = '1') then
+					report "Writing to video memory " & to_hstring(DATA_OUT) & " @ " & to_hstring(ADDRESS & '0');
 				end if;
 			end if;
 
 			if (READ = '1') then
-				DATA_IN <= RAM(to_integer(unsigned(ADDRESS)));
+				if (ADDRESS (14 downto 13) = "00") then
+					report "Reading from " & to_hstring(ADDRESS & '0');
+					DATA_IN <= RAM(to_integer(unsigned(ADDRESS)));
+				elsif (ADDRESS (14 downto 7) = "01000100") then
+					report "Reading from button";
+					DATA_IN <= x"0000";
+				end if;
 			end if;
 		end if;
 	end process;
@@ -312,8 +130,8 @@ begin
 	process
 		procedure clock_delay is
 		begin
-			wait until (CLOCK = '0');
-			wait until (CLOCK = '1');
+			wait until (CLOCK_DELAYED = '0');
+			wait until (CLOCK_DELAYED = '1');
 		end procedure;
 
 		variable MY_LINE : LINE;  -- type 'line' comes from textio
@@ -323,21 +141,17 @@ begin
 		wait for 1 us;
 		RESET <= '0';
 
-		for C in 0 to 1000 loop
+		for C in 0 to 8000 loop
+			clock_delay;
 			if  (BUS_ERROR = '1') then
 				report "Bus error at " & to_hstring(ADDRESS) & " HALTED";
-				std.env.finish;
+				exit;
 			end if;
-			report "Address=" & to_hstring(ADDRESS & '0') &
-				" Read=" & STD_LOGIC'image(READ) & " Write=" & STD_LOGIC'image(WRITE) &
-				" Data Out=" & to_hstring(DATA_OUT) & " Data In=" & to_hstring(DATA_IN) &
-				" Upper=" & STD_LOGIC'image(UPPER_DATA) & " Lower=" & STD_LOGIC'image(LOWER_DATA);
-			clock_delay;
 		end loop;
 
-		std.textio.write(std.textio.output, "Memory dump" & LF);
+		std.textio.write(std.textio.output, "Memory dump (0 to 255)" & LF);
 
-		for C in 0 to 63 loop
+		for C in 0 to 255 loop
 			std.textio.write(std.textio.output, INTEGER'image(C) & " = " & to_hstring(RAM(C)) & " (" & INTEGER'image(to_integer(unsigned(RAM(C)))) & ")" & LF);
 		end loop;
 

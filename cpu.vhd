@@ -9,6 +9,8 @@ use work.P_CONTROL.all;
 entity cpu is
 	port (
 		CLOCK : in STD_LOGIC;
+		CLOCK_MAIN : out STD_LOGIC;
+		CLOCK_DELAYED : out STD_LOGIC;
 		RESET : in STD_LOGIC;
 		ADDRESS : out STD_LOGIC_VECTOR (14 downto 0);
 		UPPER_DATA : out STD_LOGIC;
@@ -22,8 +24,8 @@ entity cpu is
 end entity;
 
 architecture behavioural of cpu is
-	signal CLOCK_MAIN : STD_LOGIC := '0';
-	signal CLOCK_DELAYED : STD_LOGIC := '0';
+	signal LOCAL_CLOCK_MAIN : STD_LOGIC := '0';
+	signal LOCAL_CLOCK_DELAYED : STD_LOGIC := '0';
 
 	signal ALU_LEFT_MUX_SEL : T_ALU_LEFT_MUX_SEL;
 	signal ALU_RIGHT_MUX_SEL : T_ALU_RIGHT_MUX_SEL;
@@ -78,12 +80,12 @@ architecture behavioural of cpu is
 begin
 	quadclock: entity work.quadclock port map (
 		CLOCK => CLOCK,
-		CLOCK_MAIN => CLOCK_MAIN,
-		CLOCK_DELAYED => CLOCK_DELAYED
+		CLOCK_MAIN => LOCAL_CLOCK_MAIN,
+		CLOCK_DELAYED => LOCAL_CLOCK_DELAYED
 	);
 
 	control: entity work.control port map (
-		CLOCK => CLOCK_MAIN,
+		CLOCK => LOCAL_CLOCK_MAIN,
 		RESET => RESET,
 		DATA_IN => DATA_IN,
 		READ => CPU_READ,
@@ -119,7 +121,7 @@ begin
 	);
 
 	alu: entity work.alu port map (
-		CLOCK => CLOCK_MAIN,
+		CLOCK => LOCAL_CLOCK_MAIN,
 		DO_OP => ALU_DO_OP,
 		OP => ALU_OP,
 		LEFT => ALU_LEFT_IN,
@@ -132,7 +134,7 @@ begin
 	);
 
 	registers: entity work.registers port map (
-		CLOCK => CLOCK_MAIN,
+		CLOCK => LOCAL_CLOCK_MAIN,
 		RESET => RESET,
 		CLEAR => REGS_CLEAR,
 		WRITE => REGS_WRITE,
@@ -148,7 +150,7 @@ begin
 	);
 
 	programcounter: entity work.programcounter port map (
-		CLOCK => CLOCK_MAIN,
+		CLOCK => LOCAL_CLOCK_MAIN,
 		RESET => RESET,
 		JUMP => PC_JUMP,
 		BRANCH => PC_BRANCH,
@@ -158,7 +160,7 @@ begin
 	);
 
 	temporary: entity work.temporary port map (
-		CLOCK => CLOCK_MAIN,
+		CLOCK => LOCAL_CLOCK_MAIN,
 		RESET => RESET,
 		WRITE => TEMPORARY_WRITE,
 		INPUT => DATA_IN,
@@ -166,9 +168,9 @@ begin
 	);
 
 	businterface: entity work.businterface port map (
-		CLOCK => CLOCK_DELAYED,
+		CLOCK => LOCAL_CLOCK_DELAYED,
 		RESET => RESET,
-		
+
 		CPU_ADDRESS => CPU_ADDRESS,
 		CPU_BUS_ACTIVE => CPU_BUS_ACTIVE,
 		CPU_CYCLE_TYPE_BYTE => CPU_CYCLE_TYPE_BYTE,
@@ -218,5 +220,8 @@ begin
 		(CYCLE_TYPE = CYCLE_TYPE_BYTE_SIGNED or CYCLE_TYPE = CYCLE_TYPE_BYTE_UNSIGNED)
 	) else '0';
 	CPU_BUS_ACTIVE <= '1' when (CPU_READ = '1' or CPU_WRITE = '1') else '0';
+
+	CLOCK_MAIN <= LOCAL_CLOCK_MAIN;
+	CLOCK_DELAYED <= LOCAL_CLOCK_DELAYED;
 
 end architecture;

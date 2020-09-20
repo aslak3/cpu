@@ -11,7 +11,7 @@ control:
 businterface:
 	vcom $(VCOMFLAGS) businterface.vhd
 cpu:
-	vcom $(VCOMFLAGS) cpu.vhd tb/cpu_tb.vhd
+	vcom $(VCOMFLAGS) cpu.vhd tb/ram.vhd tb/cpu_tb.vhd
 
 tests: registers_test alu_tests programcounter_tests cpu_tests
 
