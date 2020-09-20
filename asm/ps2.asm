@@ -1,4 +1,4 @@
-		load.w r5,#1			; cursor offset
+		load.w r5,#0			; cursor offset
 		load.w r6,#0x8000		; video writing offset
 		load.w r7,#0x100		; stack pointer
 		clear r1			; break found flag
