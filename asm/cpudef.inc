@@ -120,7 +120,7 @@ R7=128
 	popquick {dst:reg}, ({src:reg}) ->
 		0b010101 @ 0b0000 @ src[2:0] @ dst[2:0]
 	pushmulti ({dst:reg}), {src} ->
-		0b010100 @ 0b0000 @ dst[2:0] @ 0b000 @ 0b00000000 @ src[7:0]
+		0b010110 @ 0b0000 @ dst[2:0] @ 0b000 @ 0b00000000 @ src[7:0]
 	popmulti {dstregs:u8}, ({src:reg}) ->
-		0b010100 @ 0b0000 @ src[2:0] @ 0b000 @ 0b00000000 @ dstregs[7:0]
+		0b010111 @ 0b0000 @ src[2:0] @ 0b000 @ 0b00000000 @ dstregs[7:0]
 }
