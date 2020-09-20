@@ -2,8 +2,6 @@
 #align 2
 
 ; vga console routines
-; hardware: swap char word so index is on LSB, attribute is on MSB, make
-; attribute=0 use default
 
 ; sets up the cursoroffsets table: the start of each 80 coloumn row
 

@@ -2,12 +2,12 @@ start:		load.w r0,#0xf00f	; canary
 		load.w r1,#0x8000	; start of video memory
 		load.w r7,#0x80		; stack pointer
 
-loop:		load.bu r4,#0x0f	; polarity of text
-		load.w r2,#0x4000	; delay
-delay:		load.w r3,0x500		; get button state
+loop:		load.w r4,#0x0f00	; polarity of text
+		load.w r2,#0x0002	; delay
+delay:		load.w r3,BUTTON	; get button state
 		test r3			; see if we pushed
 		branchnz notpushed	; yes/no
-		load.bu r4,#0xf0	; yes: black on white
+		load.w r4,#0xf000	; yes: black on white
 notpushed:	dec r2			; dec delay
 		jumpnz delay		; more delay
 		calljump printmessage	; call sub
@@ -17,14 +17,13 @@ printmessage:	load.w r2,#message	; get start of message in r2
 messageloop:	load.bu r3,(r2)		; get this letter in r3
 		test r3			; check letter for 0
 		jumpz printmessageo	; zero? out we go
-		swap r3			; move letter to high half
-		or r3,r4		; attribute: white on black
-		inc r2			; next letter
+		or r3,r4		; or over the wob state
 		store.w (r1),r3		; write letter
 		incd r1			; inc video pointer
-		store.w 0x200,r1	; put the address on the lcd
+		inc r2
+		store.w SEVENSEG,r1	; put the address on the lcd
 		branch messageloop	; back to the next letter
 printmessageo:	return
 
-message:	#str "[ Hello, World! ]\0"
+message:	#str "123456789012345678901234567890123456789-\0"
 

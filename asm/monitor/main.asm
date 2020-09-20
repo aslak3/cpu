@@ -1,5 +1,3 @@
-#align 2
-
 start:		load.w r7,#0x2000
 
 		load.w r0,#0x4321
