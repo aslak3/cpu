@@ -9,7 +9,7 @@ my $offset = 0;
 my $word;
 
 print <<END
-; Machine generated; do not try to edit!
+-- Machine generated; do not try to edit!
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 
