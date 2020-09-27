@@ -25,7 +25,7 @@ This is of course a work in progress.
   - ALUI operates with an immediate operand
 * Conditional jumps and branches: always, on each flag set or clear with don't cares
 * Nop instruction
-* Stacking: call/return and push and pop, with "quick" and multi register operations
+* Stacking: call/return and push and pop
 * No microcode: a coded state machine is used
 * Most instructions take 3 cycles
 * CustomASM (https://github.com/hlorenzi/customasm) is the current assembler
@@ -37,7 +37,6 @@ This is of course a work in progress.
 # TODO
 
 * Testbench for the controller
-* Eliminate empty states
 * Add more instructions!
   - Relative addressing on loads and stores with the PC
   - Software traps

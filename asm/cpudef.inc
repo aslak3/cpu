@@ -1,12 +1,3 @@
-R0=1
-R1=2
-R2=4
-R3=8
-R4=16
-R5=32
-R6=64
-R7=128
-
 #cpudef
 {
 	#bits 8
@@ -103,9 +94,9 @@ R7=128
 	{aluop:twoargalu} {dst:reg}, {operand:reg} ->
 		0b001110 @ aluop[3:0] @ operand[2:0] @ dst[2:0]
 	{aluop:twoargalu} {dst:reg}, #{value} ->
-		0b001111 @ aluop[3:0] @ 0b000 @ dst[2:0] @ value[15:0]
+		0b011000 @ aluop[3:0] @ 0b000 @ dst[2:0] @ value[15:0]
 	{aluop:oneargalu} {dst:reg} ->
-		0b000001 @ aluop[3:0] @ 0b000 @ dst[2:0]
+		0b001111 @ aluop[3:0] @ 0b000 @ dst[2:0]
 
 	; 0b111 - use r7
 	calljump {target} ->
@@ -119,8 +110,4 @@ R7=128
 		0b010100 @ 0b0000 @ dst[2:0] @ src[2:0]
 	popquick {dst:reg}, ({src:reg}) ->
 		0b010101 @ 0b0000 @ src[2:0] @ dst[2:0]
-	pushmulti ({dst:reg}), {src} ->
-		0b010110 @ 0b0000 @ dst[2:0] @ 0b000 @ 0b00000000 @ src[7:0]
-	popmulti {dstregs:u8}, ({src:reg}) ->
-		0b010111 @ 0b0000 @ src[2:0] @ 0b000 @ 0b00000000 @ dstregs[7:0]
 }

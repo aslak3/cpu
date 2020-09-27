@@ -8,7 +8,7 @@ entity businterface is
 
 		CPU_ADDRESS : in STD_LOGIC_VECTOR (15 downto 0);
 		CPU_BUS_ACTIVE : in STD_LOGIC;
-		CPU_CYCLE_TYPE_BYTE : in STD_LOGIC;
+		CPU_CYCLETYPE_BYTE : in STD_LOGIC;
 		CPU_DATA_OUT : in STD_LOGIC_VECTOR (15 downto 0);
 		CPU_DATA_IN : out STD_LOGIC_VECTOR (15 downto 0);
 		CPU_READ : in STD_LOGIC;
@@ -36,17 +36,17 @@ begin
 
 			-- Shift the addres to being a word address, moving low bit to upper/lower indicators
 			BUSINTERFACE_ADDRESS <= CPU_ADDRESS (15 downto 1);
-			if (CPU_CYCLE_TYPE_BYTE = '0' or CPU_ADDRESS (0) = '0') then
+			if (CPU_CYCLETYPE_BYTE = '0' or CPU_ADDRESS (0) = '0') then
 				BUSINTERFACE_UPPER_DATA <= '1';
 			end if;
-			if (CPU_CYCLE_TYPE_BYTE = '0' or CPU_ADDRESS (0) = '1') then
+			if (CPU_CYCLETYPE_BYTE = '0' or CPU_ADDRESS (0) = '1') then
 				BUSINTERFACE_LOWER_DATA <= '1';
 			end if;
-			if (CPU_CYCLE_TYPE_BYTE = '0' and CPU_ADDRESS (0) = '1' and CPU_BUS_ACTIVE = '1') then
+			if (CPU_CYCLETYPE_BYTE = '0' and CPU_ADDRESS (0) = '1' and CPU_BUS_ACTIVE = '1') then
 				BUSINTERFACE_ERROR <= '1';
 			end if;
 
-			if (CPU_CYCLE_TYPE_BYTE = '0' and CPU_ADDRESS (0) = '0') then
+			if (CPU_CYCLETYPE_BYTE = '0' and CPU_ADDRESS (0) = '0') then
 				BUSINTERFACE_DATA_OUT <= CPU_DATA_OUT;
 				CPU_DATA_IN <= BUSINTERFACE_DATA_IN;
 			elsif (CPU_ADDRESS (0) = '0') then
@@ -62,6 +62,7 @@ begin
 
 			BUSINTERFACE_READ <= CPU_READ;
 			BUSINTERFACE_WRITE <= CPU_WRITE;
+
 		end if;
 	end process;
 end architecture;

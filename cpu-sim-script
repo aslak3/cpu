@@ -1,0 +1,3 @@
+run -all
+mem display /cpu_tb/intram/altsyncram_component/MEMORY/m_mem_data_a -addressradix h -dataradix hex \
+	-startaddress 0 -endaddress 255 -wordsperline 8

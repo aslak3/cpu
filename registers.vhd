@@ -158,3 +158,56 @@ begin
 
 	OUTPUT <= TEMP;
 end architecture;
+
+---
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use work.P_REGS.all;
+use work.P_CONTROL.all;
+use work.P_ALU.all;
+
+entity instruction is
+	port (
+		CLOCK : in STD_LOGIC;
+		RESET : in STD_LOGIC;
+		CYCLETYPE : out T_CYCLETYPE;
+		WRITE : in STD_LOGIC;
+		INPUT : in T_REG;
+		OPCODE : out T_OPCODE;
+		PARAMS : out STD_LOGIC_VECTOR (9 downto 0);
+		ALU_OP : out T_ALU_OP;
+		LEFT_INDEX : out T_REG_INDEX;
+		RIGHT_INDEX : out T_REG_INDEX;
+		FLOW_CARES : out T_FLOWTYPE;
+		FLOW_POLARITY : out T_FLOWTYPE
+	);
+end entity;
+
+architecture behavioral of instruction is
+	signal INSTRUCTION : T_REG := DEFAULT_REG;
+begin
+	process (RESET, CLOCK)
+	begin
+		if (RESET = '1') then
+			INSTRUCTION <= DEFAULT_REG;
+		elsif (CLOCK'Event and CLOCK = '1') then
+			if (WRITE = '1') then
+--pragma synthesis_off
+				report "Instruction: Writing " & to_hstring(INPUT);
+--pragma synthesis_on
+				INSTRUCTION <= INPUT;
+			end if;
+		end if;
+	end process;
+
+	CYCLETYPE <= INSTRUCTION (9 downto 8);
+	OPCODE <= INSTRUCTION (15 downto 10);
+	PARAMS <= INSTRUCTION (9 downto 0);
+	-- Overlaps with opcode; the LSB of OPCODE forms the ALU_OP
+	ALU_OP <= INSTRUCTION (10 downto 6);
+	LEFT_INDEX <= INSTRUCTION (5 downto 3);
+	RIGHT_INDEX <= INSTRUCTION (2 downto 0);
+	FLOW_CARES <= INSTRUCTION (5 downto 3);
+	FLOW_POLARITY <= INSTRUCTION (2 downto 0);
+end architecture;

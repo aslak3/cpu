@@ -1,7 +1,7 @@
 VCOMFLAGS = -2008
 
-quadclock:
-	vcom $(VCOMFLAGS) quadclock.vhd
+clockdiv:
+	vcom $(VCOMFLAGS) clockdiv.vhd
 registers:
 	vcom $(VCOMFLAGS) registers.vhd tb/registers_tb.vhd
 alu:
@@ -11,7 +11,7 @@ control:
 businterface:
 	vcom $(VCOMFLAGS) businterface.vhd
 cpu:
-	vcom $(VCOMFLAGS) cpu.vhd tb/ram.vhd tb/cpu_tb.vhd
+	vcom $(VCOMFLAGS) cpu.vhd tb/intram.vhd tb/cpu_tb.vhd
 
 tests: registers_test alu_tests programcounter_tests cpu_tests
 
@@ -24,4 +24,4 @@ programcounter_tests:
 temporary_tests:
 	vsim -c temporary_tb < sim-script
 cpu_tests:
-	vsim -c cpu_tb < sim-script
+	vsim -onfinish stop -c cpu_tb < cpu-sim-script
