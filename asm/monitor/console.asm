@@ -16,6 +16,8 @@ initconsole:	load.bu r0,#60			; the number of rows
 		clear r0
 		store.w leftshifton,r0
 		store.w rightshifton,r0
+		load.bu r0,#0x0f
+		store.w VGA_TEXT_DEFAULT_ATTR,r0
 		return
 
 ; put the string in r1
@@ -40,16 +42,17 @@ putchar:	pushquick (r7),r1
 		branchz putcharcr		; handle it
 		compare r0,#ASC_LF		; cr?
 		branchz putcharlf		; handle it
+		compare r0,#ASC_BS		; bs?
+		branchz putcharbs		; handle it
 		load.w r3,(cursoroffsets,r1)	; get the start of this row
 		add r3,r2			; add the column offset
-		or r0,#0x0f00			; white on black
 		store.w (r3),r0			; save the char
 		incd r2				; move coloumn counter
 		compare r2,#160			; end of line?
 		branchz newline			; wrap to next line
 putcharo:	load.w r3,(cursoroffsets,r1)	; get the start of this row
 		add r3,r2			; add the column offset
-		store.w VGA_CURSOR_ADDR,r3	; move the visiblecursor
+		store.w VGA_TEXT_CURSOR_ADDR,r3	; move the visiblecursor
 		store.b cursorrow,r1		; save the row
 		store.b cursorcol,r2		; save the col
 		popquick r3,(r7)
@@ -60,23 +63,47 @@ putcharcr:	incd r1				; down one row
 		branch putcharo
 putcharlf:	clear r2			; back to left margin
 		branch putcharo
+putcharbs:	decd r2
+		branchnz putcharo
+		decd r1
+		load.bu r2,#(80*2)-2
+		branch putcharo
 newline:	clear r2
 		incd r1
 		branch putcharo
 
 ; get the string into r1
 
-getstring:	callbranch getchar		; get a char in r0
+getstring:	pushquick (r7),r2
+		clear r2
+getstringtop:	callbranch getchar		; get a char in r0
 		compare r0,#ASC_CR		; cr?
 		branchz getstringo		; yes or no
+		compare r0,#ASC_BS
+		branchz getstringbs
 		store.b (r1),r0			; save the char otherwise
 		inc r1				; move pointer onward
+		inc r2
 		callbranch putchar		; echo it
-		branch getstring		; back for more
+		branch getstringtop		; back for more
 getstringo:	clear r0			; adding a null					; move pointer along
 		store.b (r1),r0			; save the null
 		inc r1				; move pointer onward
+		popquick r2,(r7)
 		return
+getstringbs:	test r2
+		branchz getstringtop
+		dec r1
+		dec r2
+		clear r0
+		store.b (r1),r0
+		load.bu r0,#ASC_BS
+		calljump putchar
+		load.bu r0,#ASC_SP
+		calljump putchar
+		load.bu r0,#ASC_BS
+		calljump putchar
+		branch getstringtop
 
 ; get a character in r0
 
@@ -251,6 +278,25 @@ shiftscancodes:
 		#str " "
 		#str " "
 
+; 6
+
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#d8 ASC_BS
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+
 scancodes:
 
 ; 0
@@ -365,6 +411,26 @@ scancodes:
 		#str " "
 		#str " "
 		#str " "
+
+; 6
+
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#d8 ASC_BS
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+		#str " "
+
 
 		#align 2
 
