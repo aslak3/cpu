@@ -166,7 +166,7 @@ drawplayarea:	clear r0			; AKA TILE_BLANKx2
 
 		load.bu r0,#TILE_BORDER_H
 		clear r1
-		load.w r2 #WIDTH-2
+		load.w r2,#WIDTH-2
 horizloop:	store.b (ORIGIN+1,r1),r0
 		store.b (ORIGIN+1+(WIDTH*(HEIGHT-1)),r1),r0
 		inc r1
@@ -236,16 +236,16 @@ drawsnakepart:	load.bu r2,(rowsnake,r1)	; get the row no
 
 steersnake:	callbranch getps2byte
 		compare r0,#KEY_A
-		branchz .left
+		branchz left
 		compare r0,#KEY_D
-		branchz .right
+		branchz right
 		compare r0,#KEY_W
-		branchz .up
+		branchz up
 		compare r0,#KEY_S
-		branchz .down
+		branchz down
 steersnakeo:	return
 
-.right:		load.bu r0,snakedirection
+right:		load.bu r0,snakedirection
 		compare r0,#2
 		branchz steersnakeo
 		load.bu r0,#1
@@ -255,7 +255,7 @@ steersnakeo:	return
 		clear r0
 		store.b snakedirection,r0
 		return
-.up:		load.bu r0,snakedirection
+up:		load.bu r0,snakedirection
 		compare r0,#3
 		branchz steersnakeo
 		clear r0
@@ -265,7 +265,7 @@ steersnakeo:	return
 		load.bu r0,#1
 		store.b snakedirection,r0
 		return
-.left:		load.bu r0,snakedirection
+left:		load.bu r0,snakedirection
 		test r0
 		branchz steersnakeo
 		load.bu r0,#-1
@@ -275,7 +275,7 @@ steersnakeo:	return
 		load.bu r0,#2
 		store.b snakedirection,r0
 		return
-.down:		load.bu r0,snakedirection
+down:		load.bu r0,snakedirection
 		compare r0,#1
 		branchz steersnakeo
 		clear r0
