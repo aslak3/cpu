@@ -12,12 +12,11 @@ This is of course a work in progress.
 * 16 bit opcodes
 * Byte and word size memory accesses, with signed/unsigned extension on byte reads
   - Bus error signal on unaligned word transfers
-* Some opcodes (like LOADI, JUMPs, BRANCHes, ALUMI, CALLs) have one following operand
+* Some opcodes (like LOADI, JUMPs, BRANCHes, ALUMI, CALLs) have one following immediate value/address
 * 8 x 16 bit general purpose registers
 * 16 bit Program Counter
-* Load an immediate 16 bit quantity in the following address
-* Load and store instructions operate either through a register or an immediate address
-  - With optional immediate displacement
+* Load an immediate 16 bit quantity at the following address
+* Load and store instructions operate either through a register, an immediate address or a register with an immediate displacement
 * Clear instruction
 * Simple status bits: zero, negative, carry
 * ALU operations including
@@ -37,14 +36,14 @@ This is of course a work in progress.
 * Testbench for the controller
 * Add more instructions!
   - Relative addressing on loads and stores with the PC
-  - Multiply and divide
-  - Barrel shifter
+  - Multiply and divide?
+  - Barrel shifter?
   - Restricting ALU ops to byte wide values might be useful
   - ....
 * Properly implement twos-complement
   - Arithmatic shifts
 * Better status bits: not currently settable via an opcode, nor are they changed on anything other then an ALU instruction
-	* This unfortuantely includes the LOADRD and STORED opcodes, which is confusing and wrong
+  * This unfortuantely includes the LOADRD and STORED opcodes, which is confusing and wrong
 * Overflow on signed arithmatic is not yet implemented
 
 # Top level RTL diagram (OUT OF DATE)
@@ -197,7 +196,7 @@ This is of course a work in progress.
 <td colspan='3'>Dst reg</td>
 </tr>
 <tr>
-<td colspan='17'>Dst reg + &leftarrow; Dst reg <i>ALU mlti op</i> Src reg</td>
+<td colspan='17'>Dst reg &leftarrow; Dst reg <i>ALU mlti op</i> Src reg</td>
 </tr>
 <tr>
 <td>ALUS</td>
@@ -207,7 +206,7 @@ This is of course a work in progress.
 <td colspan='3'>Dst reg</td>
 </tr>
 <tr>
-<td colspan='17'>Dst reg + &leftarrow; <i>ALU single op</i> Dst reg</td>
+<td colspan='17'>Dst reg &leftarrow; <i>ALU single op</i> Dst reg</td>
 </tr>
 <tr>
 <td>ALUMI</td>
@@ -217,7 +216,7 @@ This is of course a work in progress.
 <td colspan='3'>Dst reg</td>
 </tr>
 <tr>
-<td colspan='17'>Dst reg + &leftarrow; Dest reg <i>ALU multi op</i> IMMEDIATE</td>
+<td colspan='17'>Dst reg &leftarrow; Dst reg <i>ALU multi op</i> IMMEDIATE</td>
 </tr>
 <tr>
 <td>CALLJUMP *</td>
@@ -246,7 +245,7 @@ This is of course a work in progress.
 <td colspan='3'>Stack reg</td>
 </tr>
 <tr>
-<td colspan='17'>PC &leftarrow; [Stack reg] &leftarrow; PC ; Stack reg &leftarrow; Stack reg + 2 </td>
+<td colspan='17'>PC &leftarrow; [Stack reg] ; Stack reg &leftarrow; Stack reg + 2 </td>
 <tr>
 <td>PUSHQUICK</td>
 <td colspan='6'>0b010100</td>
