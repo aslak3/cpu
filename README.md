@@ -40,8 +40,6 @@ This is of course a work in progress.
   - Barrel shifter?
   - Restricting ALU ops to byte wide values might be useful
   - ....
-* Properly implement twos-complement
-  - Arithmatic shifts
 * Better status bits: not currently settable via an opcode, nor are they changed on anything other then an ALU instruction
   * This unfortuantely includes the LOADRD and STORED opcodes, which is confusing and wrong
 * Overflow on signed arithmatic is not yet implemented

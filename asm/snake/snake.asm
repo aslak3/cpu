@@ -141,9 +141,9 @@ randominit:	load.w r0,#1			; for now init to 1
 randomnumber:	load.w r0,randomseed		; get the current seed
 		test r0				; 0?
 		branchz doeor			; if yes do the xor
-		shiftleft r0 			; shift it up
+		logicleft r0 			; logic it up
 		branchz noeor			; no xor if input 8000
-		branchnc noeor			; no 1 in carry? shift
+		branchnc noeor			; no 1 in carry? logic
 doeor:		xor r0,#0x002d			; magic
 noeor:		store.w randomseed,r0		; save the latest number
 		return
@@ -204,7 +204,7 @@ placenewfood:	calljump randomnumber		; get latest prng
 		calljump randomnumber		; get another
 		and r0,#31			; highest power of 2
 		add r0,#(40-32)/2		; center it
-		shiftleft r1			; shift row to make words
+		logicleft r1			; logic row to make words
 		load.w r1,(rowoffsets,r1)	; start of row
 		add r1,r0			; add coloumn
 		load.bu r0,(r1)			; get the current
@@ -227,7 +227,7 @@ initrowoffsets:	clear r0
 ; draws the tile at r0 for the given snake position at r1
 
 drawsnakepart:	load.bu r2,(rowsnake,r1)	; get the row no
-		shiftleft r2			; row table is in words
+		logicleft r2			; row table is in words
 		load.w r2,(rowoffsets,r2)	; get the start of this row
 		load.bu r1,(colsnake,r1)	; get the col no
 		add r2,r1			; add the col no to start
@@ -313,7 +313,7 @@ movesnake:	load.bu r0,headpos		; get head index
 
 docollision:	load.bu r1,headpos
 		load.bu r2,(rowsnake,r1)	; get the row no
-		shiftleft r2
+		logicleft r2
 		load.w r2,(rowoffsets,r2)	; get the start of this row
 		load.bu r1,(colsnake,r1)	; get the col no
 		add r2,r1			; add the col no to start
@@ -337,7 +337,7 @@ emptysquare:	clear r0			; not death
 
 ; prints the msg at r2 at row r0 coloumn r1
 
-printmsg:	shiftleft r0			; word wide address
+printmsg:	logicleft r0			; word wide address
 		load.w r0,(rowoffsets,r0)	; get the start of the row
 		add r0,r1			; add the column
 .loop:		load.bu r1,(r2)			; get the char

@@ -66,6 +66,7 @@ architecture behavioural of cpu is
 	signal ALU_CARRY_OUT : STD_LOGIC := '0';
 	signal ALU_ZERO_OUT : STD_LOGIC := '0';
 	signal ALU_NEG_OUT : STD_LOGIC := '0';
+	signal ALU_OVER_OUT : STD_LOGIC := '0';
 
 	-- Registers
 	signal REGS_CLEAR : STD_LOGIC := '0';
@@ -119,6 +120,7 @@ begin
 		ALU_CARRY_OUT => ALU_CARRY_OUT,
 		ALU_ZERO_OUT => ALU_ZERO_OUT,
 		ALU_NEG_OUT => ALU_NEG_OUT,
+		ALU_OVER_OUT => ALU_OVER_OUT,
 
 		REGS_CLEAR => REGS_CLEAR,
 		REGS_WRITE => REGS_WRITE,

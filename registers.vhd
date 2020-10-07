@@ -208,6 +208,6 @@ begin
 	ALU_OP <= INSTRUCTION (10 downto 6);
 	LEFT_INDEX <= INSTRUCTION (5 downto 3);
 	RIGHT_INDEX <= INSTRUCTION (2 downto 0);
-	FLOW_CARES <= INSTRUCTION (5 downto 3);
-	FLOW_POLARITY <= INSTRUCTION (2 downto 0);
+	FLOW_CARES <= INSTRUCTION (7 downto 4);
+	FLOW_POLARITY <= INSTRUCTION (3 downto 0);
 end architecture;

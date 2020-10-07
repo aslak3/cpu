@@ -26,12 +26,12 @@
 	}
 	#tokendef condition
 	{
-		nz = 0b010000
-		z = 0b010010
-		nc = 0b100000
-		c = 0b100100
-		nn = 0b001000
-		n = 0b001001
+		nz = 0b01000000
+		z = 0b01000100
+		nc = 0b10000000
+		c = 0b10001000
+		nn = 0b00100000
+		n = 0b00100010
 	}
 	#tokendef twoargalu
 	{
@@ -53,11 +53,13 @@
 		incd = 0x2
 		decd = 0x3
 		not = 0x4
-		shiftleft = 0x5
-		shiftright = 0x6
-		negate = 0x7
-		swap = 0x8
-		test = 0x9
+		logicleft = 0x5
+		logicright = 0x6
+		arithleft = 0x7
+		arithright = 0x8
+		negate = 0x9
+		swap = 0xa
+		test = 0xb
 	}
 
 	nop -> 0x0000
@@ -85,11 +87,11 @@
 	jump {target} ->
 		0b000010 @ 0b0000 @ 0b000000 @ target[15:0]
 	jump{test:condition} {target} ->
-		0b000010 @ 0b0000 @ test[5:0] @ target[15:0]
+		0b000010 @ 0b00 @ test[7:0] @ target[15:0]
 	branch {target} ->
 		0b000011 @ 0b0 @0b000000000 @ { target - pc - 2 }[15:0]
 	branch{test:condition} {target} ->
-		0b000011 @ 0b0000 @ test[5:0] @ { target - pc - 2 }[15:0]
+		0b000011 @ 0b00 @ test[7:0] @ { target - pc - 2 }[15:0]
 
 	{aluop:twoargalu} {dst:reg}, {operand:reg} ->
 		0b001110 @ aluop[3:0] @ operand[2:0] @ dst[2:0]

@@ -4,27 +4,29 @@ use IEEE.STD_LOGIC_1164.all;
 package P_ALU is
 	subtype T_ALU_OP is STD_LOGIC_VECTOR (4 downto 0);
 
-	constant OP_ADD :		T_ALU_OP := '0' & x"0";
-	constant OP_ADDC :		T_ALU_OP := '0' & x"1";
-	constant OP_SUB :		T_ALU_OP := '0' & x"2";
-	constant OP_SUBC :		T_ALU_OP := '0' & x"3";
-	constant OP_AND :		T_ALU_OP := '0' & x"4";
-	constant OP_OR : 		T_ALU_OP := '0' & x"5";
-	constant OP_XOR : 		T_ALU_OP := '0' & x"6";
-	constant OP_COPY :		T_ALU_OP := '0' & x"7";
-	constant OP_COMP :		T_ALU_OP := '0' & x"8";
-	constant OP_BIT :		T_ALU_OP := '0' & x"9";
+	constant OP_ADD :			T_ALU_OP := '0' & x"0";
+	constant OP_ADDC :			T_ALU_OP := '0' & x"1";
+	constant OP_SUB :			T_ALU_OP := '0' & x"2";
+	constant OP_SUBC :			T_ALU_OP := '0' & x"3";
+	constant OP_AND :			T_ALU_OP := '0' & x"4";
+	constant OP_OR : 			T_ALU_OP := '0' & x"5";
+	constant OP_XOR : 			T_ALU_OP := '0' & x"6";
+	constant OP_COPY :			T_ALU_OP := '0' & x"7";
+	constant OP_COMP :			T_ALU_OP := '0' & x"8";
+	constant OP_BIT :			T_ALU_OP := '0' & x"9";
 
-	constant OP_INC : 		T_ALU_OP := '1' & x"0";
-	constant OP_DEC : 		T_ALU_OP := '1' & x"1";
-	constant OP_INCD : 		T_ALU_OP := '1' & x"2";
-	constant OP_DECD : 		T_ALU_OP := '1' & x"3";
-	constant OP_NOT : 		T_ALU_OP := '1' & x"4";
-	constant OP_LEFT : 		T_ALU_OP := '1' & x"5";
-	constant OP_RIGHT :	 	T_ALU_OP := '1' & x"6";
-	constant OP_NEG :		T_ALU_OP := '1' & x"7";
-	constant OP_SWAP :		T_ALU_OP := '1' & x"8";
-	constant OP_TEST :		T_ALU_OP := '1' & x"9";
+	constant OP_INC : 			T_ALU_OP := '1' & x"0";
+	constant OP_DEC : 			T_ALU_OP := '1' & x"1";
+	constant OP_INCD : 			T_ALU_OP := '1' & x"2";
+	constant OP_DECD : 			T_ALU_OP := '1' & x"3";
+	constant OP_NOT : 			T_ALU_OP := '1' & x"4";
+	constant OP_LOGIC_LEFT : 	T_ALU_OP := '1' & x"5";
+	constant OP_LOGIC_RIGHT :	T_ALU_OP := '1' & x"6";
+	constant OP_ARITH_LEFT : 	T_ALU_OP := '1' & x"7";
+	constant OP_ARITH_RIGHT :	T_ALU_OP := '1' & x"8";
+	constant OP_NEG :			T_ALU_OP := '1' & x"9";
+	constant OP_SWAP :			T_ALU_OP := '1' & x"a";
+	constant OP_TEST :			T_ALU_OP := '1' & x"b";
 
 	end package;
 
@@ -44,7 +46,8 @@ entity alu is
 		RESULT : out STD_LOGIC_VECTOR (15 downto 0);
 		CARRY_OUT : out STD_LOGIC;
 		ZERO_OUT : out STD_LOGIC;
-		NEG_OUT : out STD_LOGIC
+		NEG_OUT : out STD_LOGIC;
+		OVER_OUT : out STD_LOGIC
 	);
 end entity;
 
@@ -96,10 +99,14 @@ begin
 						TEMP_RESULT := TEMP_RIGHT - 2;
 					when OP_NOT =>
 						TEMP_RESULT := not ('1' & TEMP_RIGHT (15 downto 0));
-					when OP_LEFT =>
+					when OP_LOGIC_LEFT =>
 						TEMP_RESULT := TEMP_RIGHT (15 downto 0) & '0';
-					when OP_RIGHT =>
+					when OP_LOGIC_RIGHT =>
 						TEMP_RESULT := TEMP_RIGHT (0) & '0' & TEMP_RIGHT (15 downto 1);
+					when OP_ARITH_LEFT =>
+						TEMP_RESULT := TEMP_RIGHT (15 downto 0) & '0';
+					when OP_ARITH_RIGHT =>
+						TEMP_RESULT := TEMP_RIGHT (0) & TEMP_RIGHT (15) & TEMP_RIGHT (15 downto 1);
 					when OP_NEG =>
 						TEMP_RESULT := not TEMP_RIGHT + 1;
 					when OP_SWAP =>
@@ -117,13 +124,42 @@ begin
 				else
 					RESULT <= RIGHT;
 				end if;
+
 				CARRY_OUT <= TEMP_RESULT (16);
-				 if (TEMP_RESULT (15 downto 0) = x"0000") then
+
+				if (TEMP_RESULT (15 downto 0) = x"0000") then
 					ZERO_OUT <= '1';
 				else
 					ZERO_OUT <= '0';
 				end if;
+
 				NEG_OUT <= TEMP_RESULT (15);
+
+				-- When adding then if sign of result is different to the sign of both the
+				-- operands then it is an overflow condition
+				if (OP = OP_ADD or OP = OP_ADDC) then
+					if (TEMP_LEFT (15) /= TEMP_RESULT (15) and TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
+						OVER_OUT <= '1';
+					else
+						OVER_OUT <= '0';
+					end if;
+				-- Likewise for sub, but invert the left sign for test as its a subtract
+				elsif (OP = OP_SUB or OP = OP_SUBC) then
+					if (TEMP_LEFT (15) = TEMP_RESULT (15) and TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
+						OVER_OUT <= '1';
+					else
+						OVER_OUT <= '0';
+					end if;
+				-- For arith shift left, if the sign changed then it is an overflow
+				elsif (OP = OP_ARITH_LEFT) then
+					if (TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
+						OVER_OUT <= '1';
+					else
+						OVER_OUT <= '0';
+					end if;
+				else
+					OVER_OUT <= '0';
+				end if;
 
 --pragma synthesis_off
 				report "ALU: OP " & to_hstring(OP) & " Operand=" &
