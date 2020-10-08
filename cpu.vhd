@@ -160,7 +160,8 @@ begin
 		RESULT => ALU_RESULT,
 		CARRY_OUT => ALU_CARRY_OUT,
 		ZERO_OUT => ALU_ZERO_OUT,
-		NEG_OUT => ALU_NEG_OUT
+		NEG_OUT => ALU_NEG_OUT,
+		OVER_OUT => ALU_OVER_OUT
 	);
 
 	registers: entity work.registers port map (

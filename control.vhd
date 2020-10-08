@@ -47,10 +47,10 @@ package P_CONTROL is
 	constant OPCODE_POPQUICK :		T_OPCODE := "010101";
 
 	subtype T_FLOWTYPE is STD_LOGIC_VECTOR (3 downto 0);
-	constant FLOWTYPE_CARRY :		integer := 0;
-	constant FLOWTYPE_ZERO :		integer := 1;
-	constant FLOWTYPE_NEG :			integer := 2;
-	constant FLOWTYPE_OVER :		integer := 3;
+	constant FLOWTYPE_CARRY :		integer := 3;
+	constant FLOWTYPE_ZERO :		integer := 2;
+	constant FLOWTYPE_NEG :			integer := 1;
+	constant FLOWTYPE_OVER :		integer := 0;
 
 	subtype T_CYCLETYPE is STD_LOGIC_VECTOR (1 downto 0);
 	constant CYCLETYPE_WORD :			T_CYCLETYPE := "00";

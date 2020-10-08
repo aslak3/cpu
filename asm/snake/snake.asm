@@ -363,12 +363,14 @@ getps2byte:	load.bu r0,PS2_STATUS		; get from the status reg
 ;;; debugging
 
 breakpoint:	;store.w SEVENSEG,r0
-;.l1:		load.w r0,BUTTONS
-;		bit r0,#1
-;		branchnz .l1
-;.l2:		load.w r0,BUTTON
-;		bit r0,#1
-;		branchz .l2
+.l1:		;load.w r0,BUTTONS
+		;and r0,#1
+		;store.w SEVENSEG,r0
+		;branchnz .l1
+.l2:		;load.w r0,BUTTONS
+		;store.w LED,r0
+		;bit r0,#1
+		;branchz .l2
 		return
 
 titlemsg:	#str " Snake! \0"

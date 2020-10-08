@@ -85,11 +85,11 @@
 		0b011011 @ width[1:0] @ 0b00 @ dst[2:0] @ src[2:0] @ offset[15:0]
 
 	jump {target} ->
-		0b000010 @ 0b0000 @ 0b000000 @ target[15:0]
+		0b000010 @ 0b00 @ 0b00000000 @ target[15:0]
 	jump{test:condition} {target} ->
 		0b000010 @ 0b00 @ test[7:0] @ target[15:0]
 	branch {target} ->
-		0b000011 @ 0b0 @0b000000000 @ { target - pc - 2 }[15:0]
+		0b000011 @ 0b00 @0b00000000 @ { target - pc - 2 }[15:0]
 	branch{test:condition} {target} ->
 		0b000011 @ 0b00 @ test[7:0] @ { target - pc - 2 }[15:0]
 
