@@ -45,6 +45,8 @@
 		copy = 0x7
 		compare = 0x8
 		bit = 0x9
+		mulu = 0xa
+		muls = 0xb
 	}
 	#tokendef oneargalu
 	{

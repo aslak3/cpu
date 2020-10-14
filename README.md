@@ -20,7 +20,7 @@ This is of course a work in progress.
 * Clear instruction
 * Simple status bits: zero, negative, carry
 * ALU operations including
-  - add, add with carry, subtract, subtract with carry, increment, decrement, and, or, xor, not, shift left, shift right, copy, negation, etc
+  - add, add with carry, subtract, subtract with carry, signed and unsigned 8 bit to 16 bit multiply, increment, decrement, and, or, xor, not, shift left, shift right, copy, negation, etc
 * ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST
   - ALUMI operates with an immediate operand, eg. add r0,#123
 * Conditional and uncoditional jumps and branches: always, on each flag set or clear with don't cares
@@ -36,13 +36,13 @@ This is of course a work in progress.
 * Testbench for the controller
 * Add more instructions!
   - Relative addressing on loads and stores with the PC
-  - Multiply and divide?
+  - (Better) multiply and divide?
   - Barrel shifter?
   - Restricting ALU ops to byte wide values might be useful
   - ....
 * Better status bits: not currently settable via an opcode, nor are they changed on anything other then an ALU instruction
   * This unfortuantely includes the LOADRD and STORED opcodes, which is confusing and wrong
-* Overflow on signed arithmatic is not yet implemented
+* It should be possible to do a build without multiply support, as very small FPGAs will not have sufficent resources
 
 # Top level RTL diagram (OUT OF DATE)
 
@@ -361,7 +361,15 @@ This is of course a work in progress.
 <td>Bitwise test</td>
 </tr>
 <tr>
-<td>0b1010-0b1111
+<td>0b1010</td>
+<td>Unsigned 8 bit to 16 bit multiply</td>
+</tr>
+<tr>
+<td>0b1011</td>
+<td>Signed 8 bit to 16 bit multiply</td>
+</tr>
+<tr>
+<td>0b1100-0b1111
 <td>Unused</td>
 </tr>
 </table>

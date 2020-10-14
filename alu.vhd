@@ -14,6 +14,8 @@ package P_ALU is
 	constant OP_COPY :			T_ALU_OP := '0' & x"7";
 	constant OP_COMP :			T_ALU_OP := '0' & x"8";
 	constant OP_BIT :			T_ALU_OP := '0' & x"9";
+	constant OP_MULU :			T_ALU_OP := '0' & x"a";
+	constant OP_MULS :			T_ALU_OP := '0' & x"b";
 
 	constant OP_INC : 			T_ALU_OP := '1' & x"0";
 	constant OP_DEC : 			T_ALU_OP := '1' & x"1";
@@ -88,6 +90,10 @@ begin
 					when OP_BIT =>
 						TEMP_RESULT := TEMP_RIGHT and TEMP_LEFT;
 						GIVE_RESULT := '0';
+					when OP_MULU =>
+						TEMP_RESULT := '0' & STD_LOGIC_VECTOR(unsigned(TEMP_RIGHT (7 downto 0)) * unsigned(TEMP_LEFT (7 downto 0)));
+					when OP_MULS =>
+						TEMP_RESULT := '0' & STD_LOGIC_VECTOR(signed(TEMP_RIGHT (7 downto 0)) * signed(TEMP_LEFT (7 downto 0)));
 
 					when OP_INC =>
 						TEMP_RESULT := TEMP_RIGHT + 1;
