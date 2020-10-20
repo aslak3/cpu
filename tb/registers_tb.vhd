@@ -152,7 +152,6 @@ architecture behavioral of programcounter_tb is
 	signal CLOCK : STD_LOGIC;
 	signal RESET : STD_LOGIC;
 	signal PC_JUMP : STD_LOGIC := '0';
-	signal PC_BRANCH : STD_LOGIC := '0';
 	signal PC_INPUT : T_REG := (others => '0');
 	signal PC_INCREMENT : STD_LOGIC := '0';
 	signal PC_OUTPUT : T_REG;
@@ -161,7 +160,6 @@ begin
 		CLOCK => CLOCK,
 		RESET => RESET,
 		JUMP => PC_JUMP,
-		BRANCH => PC_BRANCH,
 		INPUT => PC_INPUT,
 		INCREMENT => PC_INCREMENT,
 		OUTPUT => PC_OUTPUT
@@ -199,16 +197,6 @@ begin
 
 		assert PC_OUTPUT = x"1234"
 			report "PC jump" severity failure;
-
-		clock_delay;
-
-		PC_BRANCH <= '1';
-		PC_INPUT <= x"fffe";
-		clock_delay;
-		PC_BRANCH <= '0';
-
-		assert PC_OUTPUT = x"1232"
-			report "PC branch" severity failure;
 
 		clock_delay;
 

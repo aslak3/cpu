@@ -85,7 +85,6 @@ entity programcounter is
 		CLOCK : in STD_LOGIC;
 		RESET : in STD_LOGIC;
 		JUMP : in STD_LOGIC;
-		BRANCH : in STD_LOGIC;
 		INPUT : in T_REG;
 		INCREMENT : in STD_LOGIC;
 		OUTPUT : out T_REG
@@ -105,11 +104,6 @@ begin
 				report "PC: jumping to " & to_hstring(INPUT);
 --pragma synthesis_on
 				PC <= INPUT;
-			elsif (BRANCH = '1') then
---pragma synthesis_off
-				report "PC: branching + " & to_hstring(INPUT);
---pragma synthesis_on
-				PC <= PC + INPUT;
 			elsif (INCREMENT = '1') then
 --pragma synthesis_off
 				report "PC: incrementing";
