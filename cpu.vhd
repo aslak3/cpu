@@ -18,7 +18,8 @@ entity cpu is
 		DATA_OUT : out STD_LOGIC_VECTOR (15 downto 0);
 		BUS_ERROR : out STD_LOGIC;
 		READ : out STD_LOGIC;
-		WRITE : out STD_LOGIC
+		WRITE : out STD_LOGIC;
+		HALTED : out STD_LOGIC
 	);
 end entity;
 
@@ -102,6 +103,7 @@ begin
 		READ => CPU_READ,
 		WRITE => CPU_WRITE,
 		CYCLETYPE => CYCLETYPE,
+		HALTED => HALTED,
 
 		ALU_LEFT_MUX_SEL => ALU_LEFT_MUX_SEL,
 		ALU_RIGHT_MUX_SEL => ALU_RIGHT_MUX_SEL,

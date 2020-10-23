@@ -22,6 +22,7 @@ package P_CONTROL is
 	subtype T_OPCODE is STD_LOGIC_VECTOR (5 downto 0);
 
 	constant OPCODE_NOP :			T_OPCODE := "000000";
+	constant OPCODE_HALT :			T_OPCODE := "101010";
 
 	constant OPCODE_JUMP :			T_OPCODE := "000010";
 	constant OPCODE_BRANCH :		T_OPCODE := "000011";
@@ -58,6 +59,7 @@ package P_CONTROL is
 	constant CYCLETYPE_BYTE_SIGNED :	T_CYCLETYPE := "11";
 
 	type T_STATE is (
+		S_HALT1,
 		S_FETCH1, S_FETCH2,
 		S_DECODE,
 		S_LOADM1, S_STOREM1,
@@ -101,6 +103,7 @@ entity control is
 		READ : out STD_LOGIC;
 		WRITE : out STD_LOGIC;
 		CYCLETYPE : out T_CYCLETYPE;
+		HALTED : out STD_LOGIC;
 
 		ALU_LEFT_MUX_SEL : out T_ALU_LEFT_MUX_SEL;
 		ALU_RIGHT_MUX_SEL : out T_ALU_RIGHT_MUX_SEL;
@@ -168,6 +171,7 @@ begin
 			REGS_DEC <= '0';
 			ALU_DO_OP <= '0';
 			TEMPORARY_WRITE <= '0';
+			HALTED <= '0';
 		elsif (CLOCK'Event and CLOCK = '1') then
 			READ <= '0';
 			WRITE <= '0';
@@ -200,6 +204,10 @@ begin
 						when OPCODE_NOP =>
 							report "Control: Opcode NOP";
 							STATE := S_FETCH1;
+
+						when OPCODE_HALT =>
+							HALTED <= '1';
+							STATE := S_HALT1;
 
 						when OPCODE_LOADI =>
 							report "Control: Opcode LOADI";
@@ -363,6 +371,9 @@ begin
 --pragma synthesis_on
 							STATE := S_FETCH1;
 					end case;
+
+				when S_HALT1 =>
+					STATE := S_HALT1;
 
 				when S_LOADM1 =>
 					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;

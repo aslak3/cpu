@@ -24,7 +24,7 @@ This is of course a work in progress.
 * ALU operations are of the form DEST <= DEST op OPERAND, or DEST <= op DEST
   - ALUMI operates with an immediate operand, eg. add r0,#123
 * Conditional and uncoditional jumps and branches: always, on each flag set or clear with don't cares
-* Nop instruction
+* Nop and Halt instructions
 * Stacking: call/return and push and pop
 * No microcode: a coded state machine is used
 * Most instructions take 3 cycles
