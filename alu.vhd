@@ -40,8 +40,6 @@ use work.P_ALU.all;
 
 entity alu is
 	port (
-		CLOCK : STD_LOGIC;
-		DO_OP : in STD_LOGIC;
 		OP : in T_ALU_OP;
 		LEFT, RIGHT : in STD_LOGIC_VECTOR (15 downto 0);
 		CARRY_IN : in STD_LOGIC;
@@ -55,123 +53,114 @@ end entity;
 
 architecture behavioural of alu is
 begin
-	process (CLOCK)
+	process (LEFT, RIGHT, OP, CARRY_IN)
 		variable TEMP_LEFT  : STD_LOGIC_VECTOR (16 downto 0) := (others => '0');
 		variable TEMP_RIGHT : STD_LOGIC_VECTOR (16 downto 0) := (others => '0');
 		variable TEMP_RESUlT : STD_LOGIC_VECTOR (16 downto 0) := (others => '0');
 		variable GIVE_RESULT : STD_LOGIC := '0';
     begin
-		if (CLOCK'Event and CLOCK = '1') then
-			if (DO_OP = '1') then
-				GIVE_RESULT := '1';
-				TEMP_LEFT := '0' & LEFT (15 downto 0);
-				TEMP_RIGHT := '0' & RIGHT (15 downto 0);
+		GIVE_RESULT := '1';
+		TEMP_LEFT := '0' & LEFT (15 downto 0);
+		TEMP_RIGHT := '0' & RIGHT (15 downto 0);
 
-				case OP is
-					when OP_ADD =>
-						TEMP_RESULT := TEMP_RIGHT + TEMP_LEFT;
-					when OP_ADDC =>
-						TEMP_RESULT := TEMP_RIGHT + TEMP_LEFT + CARRY_IN;
-					when OP_SUB =>
-						TEMP_RESULT := TEMP_RIGHT - TEMP_LEFT;
-					when OP_SUBC =>
-						TEMP_RESULT := TEMP_RIGHT - TEMP_LEFT - CARRY_IN;
-					when OP_AND =>
-						TEMP_RESULT := TEMP_RIGHT and TEMP_LEFT;
-					when OP_OR =>
-						TEMP_RESULT := TEMP_RIGHT or TEMP_LEFT;
-					when OP_XOR =>
-						TEMP_RESULT := TEMP_RIGHT xor TEMP_LEFT;
-					when OP_COPY =>
-						TEMP_RESULT := TEMP_LEFT;
-					when OP_COMP =>
-						TEMP_RESULT := TEMP_RIGHT - TEMP_LEFT;
-						GIVE_RESULT := '0';
-					when OP_BIT =>
-						TEMP_RESULT := TEMP_RIGHT and TEMP_LEFT;
-						GIVE_RESULT := '0';
-					when OP_MULU =>
-						TEMP_RESULT := '0' & STD_LOGIC_VECTOR(unsigned(TEMP_RIGHT (7 downto 0)) * unsigned(TEMP_LEFT (7 downto 0)));
-					when OP_MULS =>
-						TEMP_RESULT := '0' & STD_LOGIC_VECTOR(signed(TEMP_RIGHT (7 downto 0)) * signed(TEMP_LEFT (7 downto 0)));
+		case OP is
+			when OP_ADD =>
+				TEMP_RESULT := TEMP_RIGHT + TEMP_LEFT;
+			when OP_ADDC =>
+				TEMP_RESULT := TEMP_RIGHT + TEMP_LEFT + CARRY_IN;
+			when OP_SUB =>
+				TEMP_RESULT := TEMP_RIGHT - TEMP_LEFT;
+			when OP_SUBC =>
+				TEMP_RESULT := TEMP_RIGHT - TEMP_LEFT - CARRY_IN;
+			when OP_AND =>
+				TEMP_RESULT := TEMP_RIGHT and TEMP_LEFT;
+			when OP_OR =>
+				TEMP_RESULT := TEMP_RIGHT or TEMP_LEFT;
+			when OP_XOR =>
+				TEMP_RESULT := TEMP_RIGHT xor TEMP_LEFT;
+			when OP_COPY =>
+				TEMP_RESULT := TEMP_LEFT;
+			when OP_COMP =>
+				TEMP_RESULT := TEMP_RIGHT - TEMP_LEFT;
+				GIVE_RESULT := '0';
+			when OP_BIT =>
+				TEMP_RESULT := TEMP_RIGHT and TEMP_LEFT;
+				GIVE_RESULT := '0';
+			when OP_MULU =>
+				TEMP_RESULT := '0' & STD_LOGIC_VECTOR(unsigned(TEMP_RIGHT (7 downto 0)) * unsigned(TEMP_LEFT (7 downto 0)));
+			when OP_MULS =>
+				TEMP_RESULT := '0' & STD_LOGIC_VECTOR(signed(TEMP_RIGHT (7 downto 0)) * signed(TEMP_LEFT (7 downto 0)));
 
-					when OP_INC =>
-						TEMP_RESULT := TEMP_RIGHT + 1;
-					when OP_DEC =>
-						TEMP_RESULT := TEMP_RIGHT - 1;
-					when OP_INCD =>
-						TEMP_RESULT := TEMP_RIGHT + 2;
-					when OP_DECD =>
-						TEMP_RESULT := TEMP_RIGHT - 2;
-					when OP_NOT =>
-						TEMP_RESULT := not ('1' & TEMP_RIGHT (15 downto 0));
-					when OP_LOGIC_LEFT =>
-						TEMP_RESULT := TEMP_RIGHT (15 downto 0) & '0';
-					when OP_LOGIC_RIGHT =>
-						TEMP_RESULT := TEMP_RIGHT (0) & '0' & TEMP_RIGHT (15 downto 1);
-					when OP_ARITH_LEFT =>
-						TEMP_RESULT := TEMP_RIGHT (15 downto 0) & '0';
-					when OP_ARITH_RIGHT =>
-						TEMP_RESULT := TEMP_RIGHT (0) & TEMP_RIGHT (15) & TEMP_RIGHT (15 downto 1);
-					when OP_NEG =>
-						TEMP_RESULT := not TEMP_RIGHT + 1;
-					when OP_SWAP =>
-						TEMP_RESULT := '0' & TEMP_RIGHT (7 downto 0) & TEMP_RIGHT (15 downto 8);
-					when OP_TEST =>
-						TEMP_RESULT := TEMP_RIGHT;
-						GIVE_RESULT := '0';
+			when OP_INC =>
+				TEMP_RESULT := TEMP_RIGHT + 1;
+			when OP_DEC =>
+				TEMP_RESULT := TEMP_RIGHT - 1;
+			when OP_INCD =>
+				TEMP_RESULT := TEMP_RIGHT + 2;
+			when OP_DECD =>
+				TEMP_RESULT := TEMP_RIGHT - 2;
+			when OP_NOT =>
+				TEMP_RESULT := not ('1' & TEMP_RIGHT (15 downto 0));
+			when OP_LOGIC_LEFT =>
+				TEMP_RESULT := TEMP_RIGHT (15 downto 0) & '0';
+			when OP_LOGIC_RIGHT =>
+				TEMP_RESULT := TEMP_RIGHT (0) & '0' & TEMP_RIGHT (15 downto 1);
+			when OP_ARITH_LEFT =>
+				TEMP_RESULT := TEMP_RIGHT (15 downto 0) & '0';
+			when OP_ARITH_RIGHT =>
+				TEMP_RESULT := TEMP_RIGHT (0) & TEMP_RIGHT (15) & TEMP_RIGHT (15 downto 1);
+			when OP_NEG =>
+				TEMP_RESULT := not TEMP_RIGHT + 1;
+			when OP_SWAP =>
+				TEMP_RESULT := '0' & TEMP_RIGHT (7 downto 0) & TEMP_RIGHT (15 downto 8);
+			when OP_TEST =>
+				TEMP_RESULT := TEMP_RIGHT;
+				GIVE_RESULT := '0';
 
-					when others =>
-						TEMP_RESULT := (others => '0');
-				end case;
+			when others =>
+				TEMP_RESULT := (others => '0');
+		end case;
 
-				if (GIVE_RESULT = '1') then
-					RESULT <= TEMP_RESULT (15 downto 0);
-				else
-					RESULT <= RIGHT;
-				end if;
+		if (GIVE_RESULT = '1') then
+			RESULT <= TEMP_RESULT (15 downto 0);
+		else
+			RESULT <= RIGHT;
+		end if;
 
-				CARRY_OUT <= TEMP_RESULT (16);
+		CARRY_OUT <= TEMP_RESULT (16);
 
-				if (TEMP_RESULT (15 downto 0) = x"0000") then
-					ZERO_OUT <= '1';
-				else
-					ZERO_OUT <= '0';
-				end if;
+		if (TEMP_RESULT (15 downto 0) = x"0000") then
+			ZERO_OUT <= '1';
+		else
+			ZERO_OUT <= '0';
+		end if;
 
-				NEG_OUT <= TEMP_RESULT (15);
+		NEG_OUT <= TEMP_RESULT (15);
 
-				-- When adding then if sign of result is different to the sign of both the
-				-- operands then it is an overflow condition
-				if (OP = OP_ADD or OP = OP_ADDC) then
-					if (TEMP_LEFT (15) /= TEMP_RESULT (15) and TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
-						OVER_OUT <= '1';
-					else
-						OVER_OUT <= '0';
-					end if;
-				-- Likewise for sub, but invert the left sign for test as its a subtract
-				elsif (OP = OP_SUB or OP = OP_SUBC) then
-					if (TEMP_LEFT (15) = TEMP_RESULT (15) and TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
-						OVER_OUT <= '1';
-					else
-						OVER_OUT <= '0';
-					end if;
-				-- For arith shift left, if the sign changed then it is an overflow
-				elsif (OP = OP_ARITH_LEFT) then
-					if (TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
-						OVER_OUT <= '1';
-					else
-						OVER_OUT <= '0';
-					end if;
-				else
-					OVER_OUT <= '0';
-				end if;
-
---pragma synthesis_off
-				report "ALU: OP " & to_hstring(OP) & " Operand=" &
-					to_hstring(LEFT) & " Dest=" & to_hstring(RIGHT);
---pragma synthesis_on
+		-- When adding then if sign of result is different to the sign of both the
+		-- operands then it is an overflow condition
+		if (OP = OP_ADD or OP = OP_ADDC) then
+			if (TEMP_LEFT (15) /= TEMP_RESULT (15) and TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
+				OVER_OUT <= '1';
+			else
+				OVER_OUT <= '0';
 			end if;
+		-- Likewise for sub, but invert the left sign for test as its a subtract
+		elsif (OP = OP_SUB or OP = OP_SUBC) then
+			if (TEMP_LEFT (15) = TEMP_RESULT (15) and TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
+				OVER_OUT <= '1';
+			else
+				OVER_OUT <= '0';
+			end if;
+		-- For arith shift left, if the sign changed then it is an overflow
+		elsif (OP = OP_ARITH_LEFT) then
+			if (TEMP_RIGHT (15) /= TEMP_RESULT (15)) then
+				OVER_OUT <= '1';
+			else
+				OVER_OUT <= '0';
+			end if;
+		else
+			OVER_OUT <= '0';
 		end if;
 	end process;
 end architecture;

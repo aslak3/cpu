@@ -59,14 +59,12 @@ package P_CONTROL is
 	constant CYCLETYPE_BYTE_SIGNED :	T_CYCLETYPE := "11";
 
 	type T_STATE is (
-		S_HALT1,
 		S_FETCH1, S_FETCH2,
 		S_DECODE,
+		S_HALT1,
 		S_LOADM1, S_STOREM1,
 		S_LOADRD1, S_STORERD1,
-		S_BRANCH1,
-		S_ALU1,
-		S_CALL1, S_CALL2, S_CALL3,
+		S_CALL1, S_CALL2,
 		S_PUSHQUICK1, S_POPQUICK1
 	);
 
@@ -79,6 +77,8 @@ package P_CONTROL is
 	type T_REGS_INPUT_MUX_SEL is
 		( S_ALU_RESULT, S_DATA_IN );
 	type T_PC_INPUT_MUX_SEL is
+		( S_ALU_RESULT, S_DATA_IN );
+	type T_TEMPORARY_INPUT_MUX_SEL is
 		( S_ALU_RESULT, S_DATA_IN );
 	type T_ADDRESS_MUX_SEL is
 		( S_PC, S_INSTRUCTION_LEFT, S_ALU_RESULT, S_TEMPORARY_OUTPUT );
@@ -110,6 +110,7 @@ entity control is
 		ALU_OP_MUX_SEL : out T_ALU_OP_MUX_SEL;
 		REGS_INPUT_MUX_SEL : out T_REGS_INPUT_MUX_SEL;
 		PC_INPUT_MUX_SEL : out T_PC_INPUT_MUX_SEL;
+		TEMPORARY_INPUT_MUX_SEL : out T_TEMPORARY_INPUT_MUX_SEL;
 		ADDRESS_MUX_SEL : out T_ADDRESS_MUX_SEL;
 		DATA_OUT_MUX_SEL : out T_DATA_OUT_MUX_SEL;
 
@@ -120,7 +121,6 @@ entity control is
 		INSTRUCTION_FLOW_POLARITY : in T_FLOWTYPE;
 		INSTRUCTION_CYCLETYPE : in T_CYCLETYPE;
 
-		ALU_DO_OP : out STD_LOGIC;
 		ALU_CARRY_IN : out STD_LOGIC;
 		ALU_CARRY_OUT : in STD_LOGIC;
 		ALU_ZERO_OUT : in STD_LOGIC;
@@ -145,6 +145,10 @@ begin
 	process (RESET, CLOCK)
 		variable STATE : T_STATE := S_FETCH1;
 		variable STACKED : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+		variable LAST_ALU_CARRY_OUT : STD_LOGIC := '0';
+		variable LAST_ALU_ZERO_OUT : STD_LOGIC := '0';
+		variable LAST_ALU_NEG_OUT : STD_LOGIC := '0';
+		variable LAST_ALU_OVER_OUT : STD_LOGIC := '0';
 	begin
 		if (RESET = '1') then
 			STATE := S_FETCH1;
@@ -169,7 +173,6 @@ begin
 			REGS_WRITE <= '0';
 			REGS_INC <= '0';
 			REGS_DEC <= '0';
-			ALU_DO_OP <= '0';
 			TEMPORARY_WRITE <= '0';
 			HALTED <= '0';
 		elsif (CLOCK'Event and CLOCK = '1') then
@@ -182,7 +185,6 @@ begin
 			REGS_WRITE <= '0';
 			REGS_INC <= '0';
 			REGS_DEC <= '0';
-			ALU_DO_OP <= '0';
 			TEMPORARY_WRITE <= '0';
 
 			case STATE is
@@ -222,6 +224,7 @@ begin
 							report "Control: Opcode LOADM";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
+							TEMPORARY_INPUT_MUX_SEL <= S_DATA_IN;
 							TEMPORARY_WRITE <= '1';
 							STATE := S_LOADM1;
 
@@ -229,6 +232,7 @@ begin
 							report "Control: Opcode STOREM";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
+							TEMPORARY_INPUT_MUX_SEL <= S_DATA_IN;
 							TEMPORARY_WRITE <= '1';
 							STATE := S_STOREM1;
 
@@ -261,7 +265,8 @@ begin
 							ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
 							ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 							ALU_OP_MUX_SEL <= S_ADD;
-							ALU_DO_OP <= '1';
+							TEMPORARY_INPUT_MUX_SEL <= S_ALU_RESULT;
+							TEMPORARY_WRITE <= '1';
 							STATE := S_LOADRD1;
 
 						when OPCODE_STORERD =>
@@ -271,7 +276,8 @@ begin
 							ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
 							ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 							ALU_OP_MUX_SEL <= S_ADD;
-							ALU_DO_OP <= '1';
+							TEMPORARY_INPUT_MUX_SEL <= S_ALU_RESULT;
+							TEMPORARY_WRITE <= '1';
 							STATE := S_STORERD1;
 
 						when OPCODE_JUMP | OPCODE_BRANCH =>
@@ -288,47 +294,49 @@ begin
 							if (
 								( INSTRUCTION_FLOW_CARES = "0000" ) or
 								(
-								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_CARRY) = ALU_CARRY_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_CARRY) = '0' ) and
-								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_ZERO) = ALU_ZERO_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_ZERO) = '0' ) and
-								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_NEG) = ALU_NEG_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_NEG ) = '0' ) and
-								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_OVER) = ALU_OVER_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_OVER ) = '0' )
+								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_CARRY) = LAST_ALU_CARRY_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_CARRY) = '0' ) and
+								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_ZERO) = LAST_ALU_ZERO_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_ZERO) = '0' ) and
+								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_NEG) = LAST_ALU_NEG_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_NEG ) = '0' ) and
+								( ( INSTRUCTION_FLOW_POLARITY(FLOWTYPE_OVER) = LAST_ALU_OVER_OUT ) or INSTRUCTION_FLOW_CARES(FLOWTYPE_OVER ) = '0' )
 								)
 							) then
-								report "Control: Jump/Branch taken";
 								if (INSTRUCTION_OPCODE = OPCODE_JUMP) then
+									report "Control: Jump taken";
 									PC_INPUT_MUX_SEL <= S_DATA_IN;
-									PC_JUMP <= '1';
-									STATE := S_FETCH1;
 								else
+									report "Control: Branch taken";
 									ALU_LEFT_MUX_SEL <= S_PC;
 									ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 									ALU_OP_MUX_SEL <= S_ADD;
-									ALU_DO_OP <= '1';
-									STATE := S_BRANCH1;
+									PC_INPUT_MUX_SEL <= S_ALU_RESULT;
 								end if;
+								PC_JUMP <= '1';
 							else
 								report "Control: Jump/Branch NOT taken";
 								PC_INCREMENT <= '1';
-								STATE := S_FETCH1;
 							end if;
+							STATE := S_FETCH1;
 
-						when OPCODE_ALUM | OPCODE_ALUS =>
-							report "Control: Opcode ALUM/ALUS";
-							ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
+						when OPCODE_ALUM | OPCODE_ALUS | OPCODE_ALUMI =>
+							if (INSTRUCTION_OPCODE = OPCODE_ALUMI) then
+								report "Control: Opcode ALUMI";
+								PC_INCREMENT <= '1';
+								READ <= '1';
+								ALU_LEFT_MUX_SEL <= S_DATA_IN;
+							else
+								report "Control: Opcode ALUM/ALUS";
+								ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
+							end if;
 							ALU_RIGHT_MUX_SEL <= S_INSTRUCTION_RIGHT;
 							ALU_OP_MUX_SEL <= S_INSTRUCTION_ALU_OP;
-							ALU_DO_OP <= '1';
-							STATE := S_ALU1;
-
-						when OPCODE_ALUMI =>
-							report "Control: Opcode ALUMI";
-							ADDRESS_MUX_SEL <= S_PC;
-							READ <= '1';
-							ALU_LEFT_MUX_SEL <= S_DATA_IN;
-							ALU_RIGHT_MUX_SEL <= S_INSTRUCTION_RIGHT;
-							ALU_OP_MUX_SEL <= S_INSTRUCTION_ALU_OP;
-							ALU_DO_OP <= '1';
-							STATE := S_ALU1;
+							REGS_INPUT_MUX_SEL <= S_ALU_RESULT;
+							REGS_WRITE <= '1';
+							ALU_CARRY_IN <= ALU_CARRY_OUT;
+							LAST_ALU_CARRY_OUT := ALU_CARRY_OUT;
+							LAST_ALU_ZERO_OUT := ALU_ZERO_OUT;
+							LAST_ALU_NEG_OUT := ALU_NEG_OUT;
+							LAST_ALU_OVER_OUT := ALU_OVER_OUT;
+							STATE := S_FETCH1;
 
 						when OPCODE_CALLJUMP | OPCODE_CALLBRANCH =>
 							if (INSTRUCTION_OPCODE = OPCODE_CALLJUMP) then
@@ -393,7 +401,7 @@ begin
 					STATE := S_FETCH1;
 
 				when S_LOADRD1 =>
-					ADDRESS_MUX_SEL <= S_ALU_RESULT;
+					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					READ <= '1';
 					CYCLETYPE <= INSTRUCTION_CYCLETYPE;
 					REGS_INPUT_MUX_SEL <= S_DATA_IN;
@@ -402,25 +410,11 @@ begin
 					STATE := S_FETCH1;
 
 				when S_STORERD1 =>
-					PC_INCREMENT <= '1';
-					ADDRESS_MUX_SEL <= S_ALU_RESULT;
+					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					DATA_OUT_MUX_SEL <= S_INSTRUCTION_RIGHT;
 					WRITE <= '1';
 					CYCLETYPE <= INSTRUCTION_CYCLETYPE;
-					STATE := S_FETCH1;
-
-				when S_BRANCH1 =>
-					PC_INPUT_MUX_SEL <= S_ALU_RESULT;
-					PC_JUMP <= '1';
-					STATE := S_FETCH1;
-
-				when S_ALU1 =>
-					if (INSTRUCTION_OPCODE = OPCODE_ALUMI) then
-						PC_INCREMENT <= '1';
-					end if;
-					REGS_INPUT_MUX_SEL <= S_ALU_RESULT;
-					REGS_WRITE <= '1';
-					ALU_CARRY_IN <= ALU_CARRY_OUT;
+					PC_INCREMENT <= '1';
 					STATE := S_FETCH1;
 
 				when S_CALL1 =>
@@ -432,18 +426,12 @@ begin
 					READ <= '1';
 					if (INSTRUCTION_OPCODE = OPCODE_CALLJUMP) then
 						PC_INPUT_MUX_SEL <= S_DATA_IN;
-						PC_JUMP <= '1';
-						STATE := S_FETCH1;
 					else
 						ALU_LEFT_MUX_SEL <= S_PC;
 						ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 						ALU_OP_MUX_SEL <= S_ADD;
-						ALU_DO_OP <= '1';
-						STATE := S_CALL3;
+						PC_INPUT_MUX_SEL <= S_ALU_RESULT;
 					end if;
-
-				when S_CALL3 =>
-					PC_INPUT_MUX_SEL <= S_ALU_RESULT;
 					PC_JUMP <= '1';
 					STATE := S_FETCH1;
 

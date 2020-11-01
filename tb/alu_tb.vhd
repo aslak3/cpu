@@ -9,7 +9,6 @@ end entity;
 
 architecture behavioral of alu_tb is
 	signal CLOCK : STD_LOGIC;
-	signal ALU_DO_OP : STD_LOGIC;
 	signal ALU_OP : T_ALU_OP;
 	signal ALU_LEFT, ALU_RIGHT : STD_LOGIC_VECTOR (15 downto 0);  -- inputs
 	signal ALU_CARRY_IN : STD_LOGIC;
@@ -21,8 +20,6 @@ architecture behavioral of alu_tb is
 
 begin
 	dut: entity work.alu port map (
-		CLOCK => CLOCK,
-		DO_OP => ALU_DO_OP,
 		OP => ALU_OP,
 		LEFT => ALU_LEFT,
 		RIGHT => ALU_RIGHT,
@@ -50,16 +47,11 @@ begin
 			report "Op=" & to_string(OP) & " Left=" & to_hstring(LEFT) &
 				" Right=" & to_hstring(RIGHT) & " Carry=" & to_string(CARRY_IN);
 
-			CLOCK <= '0';
-			ALU_DO_OP <= '0';
 			ALU_OP <= OP;
 			ALU_LEFT <= LEFT;
 			ALU_RIGHT <= RIGHT;
 			ALU_CARRY_IN <= CARRY_IN;
 
-			wait for 1 ns;
-			CLOCK <= '1';
-			ALU_DO_OP <= '1';
 			wait for 1 ns;
 
 			report "Result=" & to_hstring(ALU_RESULT);

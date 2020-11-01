@@ -16,7 +16,7 @@ start:		load.w r5,#zero			; the running total
 		popquick r4,(r7)		; pop everything back
 loop:		copy r2,r1			; copy the last written value
 		add r1,r5			; accumulate
-		branchc done			; overflow? out
+		jumpc done			; overflow? out
 		copy r5,r2			; copy it back over the running total
 		store.w (fib,r3),r1  		; save it in fib table using dest counter
 		incd r3				; increment alternative
