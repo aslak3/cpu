@@ -16,11 +16,17 @@ start:		load.w r7,#0x2000		; stack pointer
 		test r0				; ... starting from the end
 		branchnz .clearloop		; back for more?
 
+		load.w r0,#lcdinitseq
+		load.w r1,#LCD_CONTROL
+		callbranch lcdoutput
+		load.w r0,#lcdtitlemsg
+		load.w r1,#LCD_DATA
+		calljump lcdoutput		; do a jump just for fun
+
 		load.w r0,#1			; breakpoint shows a number
-		calljump breakpoint		; and waits for a button
+		callbranch breakpoint		; and waits for a button
 
-		calljump randominit		; setup the prng
-
+		callbranch randominit		; setup the prng
 newgame:	load.w r0,#600			; starting speed of snake
 		store.w movementdelay,r0	; ...
 
@@ -29,20 +35,18 @@ newgame:	load.w r0,#600			; starting speed of snake
 		clear r0			; reset head position
 		store.b headpos,r0		; snake starts at top of tab
 
-		calljump initrowoffsets		; init the *40 table
-
 		load.bu r0,#3			; three lives by default
 		store.b lives,r0		; not nine as you are not cat
 
-newlife:	calljump drawplayarea		; show the border and lives
+newlife:	callbranch drawplayarea		; show the border and lives
 
 		load.w r0,#2
-		calljump breakpoint
+		callbranch breakpoint
 
-		calljump placenewfood		; and we need food
+		callbranch placenewfood		; and we need food
 
 		load.w r0,#3
-		calljump breakpoint
+		callbranch breakpoint
 
 		load.bu r0,#15			; start pos
 		load.w r1,#0x100		; 256 positions
@@ -52,7 +56,7 @@ newlife:	calljump drawplayarea		; show the border and lives
 		branchnz .rowloop
 
 		load.w r0,#4
-		calljump breakpoint
+		callbranch breakpoint
 
 		load.bu r0,#20			; start pos
 		load.w r1,#0x100		; 256 positions
@@ -62,7 +66,7 @@ newlife:	calljump drawplayarea		; show the border and lives
 		branchnz .colloop		; get more
 
 		load.w r0,#5
-		calljump breakpoint
+		callbranch breakpoint
 
 		clear r0			; right,down,left.up
 		store.b snakedirection,r0	; snake starts moving right
@@ -72,24 +76,24 @@ newlife:	calljump drawplayarea		; show the border and lives
 		store.b rowdirection,r0		; right
 
 		load.w r0,#6
-		calljump breakpoint
+		callbranch breakpoint
 
 mainloop:	load.bu r1,headpos		; current head pos
 		load.bu r0,snakelength		; get the length
 		sub r1,r0			; subtract length
 		and r1,#0xff			; wrap it 0->255
 		load.bu r0,#TILE_BLANK		; blanking the end
-		calljump drawsnakepart		; blank the old tail
+		callbranch drawsnakepart		; blank the old tail
 
 		load.w r0,#7
-		calljump breakpoint
+		callbranch breakpoint
 
 		load.bu r1,headpos		; drawing from current head
 		load.bu r0,#TILE_BODY		; snake will be headless
-		callbranch drawsnakepart	; poor snake
+		callbranch drawsnakepart		; poor snake
 
 		load.w r0,#8
-		calljump breakpoint
+		callbranch breakpoint
 
 		callbranch steersnake		; adjust col/rowdirection
 		callbranch movesnake		; adjust the col/rowsnake
@@ -101,10 +105,10 @@ mainloop:	load.bu r1,headpos		; current head pos
 		load.bu r1,headpos		; get new headpos
 		load.bu r0,snakedirection	; what way are we moving?
 		add r0,#TILE_HEAD_RIGHT		; offset into the heads
-		callbranch drawsnakepart	; draw the head
+		callbranch drawsnakepart		; draw the head
 
 		load.w r0,#9
-		calljump breakpoint
+		callbranch breakpoint
 
 		load.w r1,movementdelay		; add an appropriate delay
 		clear r0			; will delay by a chunk
@@ -171,7 +175,7 @@ horizloop:	store.b (ORIGIN+1,r1),r0
 		store.b (ORIGIN+1+(WIDTH*(HEIGHT-1)),r1),r0
 		inc r1
 		dec r2
-		branchnz horizloop
+		jumpnz horizloop		; jump for fun
 
 		load.bu r0,#TILE_BORDER_V
 		clear r1
@@ -197,41 +201,29 @@ vertloop:	store.b (ORIGIN+WIDTH,r1),r0
 
 		return
 
-placenewfood:	calljump randomnumber		; get latest prng
+placenewfood:	callbranch randomnumber		; get latest prng
 		and r0,#15			; highest power of 2
 		add r0,#(30-16)/2		; center it
 		copy r1,r0			; row
-		calljump randomnumber		; get another
+		callbranch randomnumber		; get another
 		and r0,#31			; highest power of 2
 		add r0,#(40-32)/2		; center it
-		logicleft r1			; logic row to make words
-		load.w r1,(rowoffsets,r1)	; start of row
-		add r1,r0			; add coloumn
-		load.bu r0,(r1)			; get the current
+		mulu r1,#WIDTH			; get the line start
+		add r1,r0			; add coloumn count
+		load.bu r0,(ORIGIN,r1)		; get the current
 		test r0				; looking for empty
 		branchnz placenewfood		; try again?
 		load.bu r0,#TILE_HEART		; food
-		store.b (r1),r0			; place it
-		return
-
-initrowoffsets:	clear r0
-		load.w r1,#30
-		load.w r2,#ORIGIN
-.loop:		store.w (rowoffsets,r0),r2
-		add r2,#WIDTH
-		incd r0
-		dec r1
-		branchnz .loop
+		store.b (ORIGIN,r1),r0		; place it
 		return
 
 ; draws the tile at r0 for the given snake position at r1
 
 drawsnakepart:	load.bu r2,(rowsnake,r1)	; get the row no
-		logicleft r2			; row table is in words
-		load.w r2,(rowoffsets,r2)	; get the start of this row
+		mulu r2,#WIDTH			; get the line start
 		load.bu r1,(colsnake,r1)	; get the col no
 		add r2,r1			; add the col no to start
-		store.b (r2),r0			; update the screen
+		store.b (ORIGIN,r2),r0		; update the screen
 		return
 
 steersnake:	callbranch getps2byte
@@ -313,37 +305,35 @@ movesnake:	load.bu r0,headpos		; get head index
 
 docollision:	load.bu r1,headpos
 		load.bu r2,(rowsnake,r1)	; get the row no
-		logicleft r2
-		load.w r2,(rowoffsets,r2)	; get the start of this row
+		mulu r2,#WIDTH			; get the line start
 		load.bu r1,(colsnake,r1)	; get the col no
 		add r2,r1			; add the col no to start
-		load.bu r0,(r2)			; get whats there now
-		test r0
-		branchz emptysquare
-		compare r0,#TILE_HEART
-		branchz yumyum
+		load.bu r0,(ORIGIN,r2)		; get whats there now
+		test r0				; checking whats there?
+		branchz emptysquare		; vacant square
+		compare r0,#TILE_HEART		; compare with food
+		branchz yumyum			; yes? eat it!
 		load.w r0,#1			; mark death for caller
 		return
 
 yumyum:		load.bu r0,snakelength		; get length
 		inc r0				; snake gets longer
-		store.b snakelength,r0
-		load.w r0,movementdelay
-		sub r0,#5
-		store.w movementdelay,r0
-		callbranch placenewfood		; more food! 
+		store.b snakelength,r0		; save new length
+		load.w r0,movementdelay		; get current delay
+		sub r0,#5			; decrease it a bit
+		store.w movementdelay,r0	; save it back out
+		callbranch placenewfood		; more food!
 emptysquare:	clear r0			; not death
 		return
 
 ; prints the msg at r2 at row r0 coloumn r1
 
-printmsg:	logicleft r0			; word wide address
-		load.w r0,(rowoffsets,r0)	; get the start of the row
+printmsg:	mulu r0,#WIDTH			; get the start of the row
 		add r0,r1			; add the column
 .loop:		load.bu r1,(r2)			; get the char
 		test r1				; checking for null
 		branchz printmsgo		; done?
-		store.b (r0),r1			; output the char
+		store.b (ORIGIN,r0),r1			; output the char
 		inc r2				; move to next char
 		inc r0
 		branch .loop
@@ -360,6 +350,20 @@ getps2byte:	load.bu r0,PS2_STATUS		; get from the status reg
 .nothing:	clear r0
 		return
 
+; write the string in r0 to the lcd address r1, which might be control or
+; data
+
+lcdoutput:	load.bu r2,(r0)			; get the char
+		test r2				; checking for null
+		branchz lcdmsgo			; done?
+		load.w r3,LCD_BUSY		; read the busy address
+		test r3				; busy?
+		branchnz lcdoutput		; yes, back to waiting
+		store.b (r1),r2			; output the char
+		inc r0				; next char to read
+		branch lcdoutput		; and continue
+lcdmsgo:	return
+
 ;;; debugging
 
 breakpoint:	;store.w SEVENSEG,r0
@@ -368,14 +372,24 @@ breakpoint:	;store.w SEVENSEG,r0
 		;store.w SEVENSEG,r0
 		;branchnz .l1
 .l2:		;load.w r0,BUTTONS
-		;store.w LED,r0
+		;store.w SEVENSEG,r0
 		;bit r0,#1
 		;branchz .l2
 		return
 
-titlemsg:	#str " Snake! \0"
+titlemsg:	#str " Snake? \0"
 livesmsg:	#str " Lives:X \0"
 gameovermsg:	#str "Game over\0"
+lcdtitlemsg:	#str "X   Snake v0.1   XXXXXXXXXXXXXXXXXXXXXXXX"
+		#str "Lawrence ManningXXXXXXXXXXXXXXXXXXXXXXXX\0"
+
+lcdinitseq:	#d8 0x30
+		#d8 0x30
+		#d8 0x30
+		#d8 0x0c
+		#d8 0x38
+		#d8 0x01
+		#d8 0
 
 #align 2
 
@@ -385,10 +399,6 @@ bss:
 
 movementdelay:	#res 2
 randomseed:	#res 2
-
-; tables
-
-rowoffsets:	#res 30*2
 
 ; variables: bytes
 
