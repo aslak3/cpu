@@ -59,11 +59,13 @@ package P_CONTROL is
 	constant CYCLETYPE_BYTE_SIGNED :	T_CYCLETYPE := "11";
 
 	type T_STATE is (
+		S_ALU1,
 		S_FETCH1, S_FETCH2,
 		S_DECODE,
 		S_HALT1,
 		S_LOADM1, S_STOREM1,
 		S_LOADRD1, S_STORERD1,
+		S_BRANCH1,
 		S_CALL1, S_CALL2,
 		S_PUSHQUICK1, S_POPQUICK1
 	);
@@ -77,7 +79,7 @@ package P_CONTROL is
 	type T_REGS_INPUT_MUX_SEL is
 		( S_ALU_RESULT, S_DATA_IN );
 	type T_PC_INPUT_MUX_SEL is
-		( S_ALU_RESULT, S_DATA_IN );
+		( S_ALU_RESULT, S_DATA_IN, S_TEMPORARY_OUTPUT );
 	type T_TEMPORARY_INPUT_MUX_SEL is
 		( S_ALU_RESULT, S_DATA_IN );
 	type T_ADDRESS_MUX_SEL is
@@ -144,7 +146,6 @@ architecture behavioural of control is
 begin
 	process (RESET, CLOCK)
 		variable STATE : T_STATE := S_FETCH1;
-		variable STACKED : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
 		variable LAST_ALU_CARRY_OUT : STD_LOGIC := '0';
 		variable LAST_ALU_ZERO_OUT : STD_LOGIC := '0';
 		variable LAST_ALU_NEG_OUT : STD_LOGIC := '0';
@@ -303,19 +304,22 @@ begin
 								if (INSTRUCTION_OPCODE = OPCODE_JUMP) then
 									report "Control: Jump taken";
 									PC_INPUT_MUX_SEL <= S_DATA_IN;
+									PC_JUMP <= '1';
+									STATE := S_FETCH1;
 								else
 									report "Control: Branch taken";
 									ALU_LEFT_MUX_SEL <= S_PC;
 									ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 									ALU_OP_MUX_SEL <= S_ADD;
-									PC_INPUT_MUX_SEL <= S_ALU_RESULT;
+									TEMPORARY_INPUT_MUX_SEL <= S_ALU_RESULT;
+									TEMPORARY_WRITE <= '1';
+									STATE := S_BRANCH1;
 								end if;
-								PC_JUMP <= '1';
 							else
 								report "Control: Jump/Branch NOT taken";
 								PC_INCREMENT <= '1';
+								STATE := S_FETCH1;
 							end if;
-							STATE := S_FETCH1;
 
 						when OPCODE_ALUM | OPCODE_ALUS | OPCODE_ALUMI =>
 							if (INSTRUCTION_OPCODE = OPCODE_ALUMI) then
@@ -332,11 +336,7 @@ begin
 							REGS_INPUT_MUX_SEL <= S_ALU_RESULT;
 							REGS_WRITE <= '1';
 							ALU_CARRY_IN <= ALU_CARRY_OUT;
-							LAST_ALU_CARRY_OUT := ALU_CARRY_OUT;
-							LAST_ALU_ZERO_OUT := ALU_ZERO_OUT;
-							LAST_ALU_NEG_OUT := ALU_NEG_OUT;
-							LAST_ALU_OVER_OUT := ALU_OVER_OUT;
-							STATE := S_FETCH1;
+							STATE := S_ALU1;
 
 						when OPCODE_CALLJUMP | OPCODE_CALLBRANCH =>
 							if (INSTRUCTION_OPCODE = OPCODE_CALLJUMP) then
@@ -354,6 +354,7 @@ begin
 							ADDRESS_MUX_SEL <= S_INSTRUCTION_LEFT;
 							READ <= '1';
 							REGS_INC <= '1';
+							PC_INPUT_MUX_SEL <= S_DATA_IN;
 							PC_JUMP <= '1';
 							STATE := S_FETCH1;
 
@@ -380,6 +381,7 @@ begin
 							STATE := S_FETCH1;
 					end case;
 
+
 				when S_HALT1 =>
 					STATE := S_HALT1;
 
@@ -395,7 +397,7 @@ begin
 				when S_STOREM1 =>
 					ADDRESS_MUX_SEL <= S_TEMPORARY_OUTPUT;
 					DATA_OUT_MUX_SEL <= S_INSTRUCTION_RIGHT;
-					WRITE <= '1';
+						WRITE <= '1';
 					CYCLETYPE <= INSTRUCTION_CYCLETYPE;
 					PC_INCREMENT <= '1';
 					STATE := S_FETCH1;
@@ -415,6 +417,19 @@ begin
 					WRITE <= '1';
 					CYCLETYPE <= INSTRUCTION_CYCLETYPE;
 					PC_INCREMENT <= '1';
+					STATE := S_FETCH1;
+
+				when S_ALU1 =>
+					LAST_ALU_CARRY_OUT := ALU_CARRY_OUT;
+					LAST_ALU_ZERO_OUT := ALU_ZERO_OUT;
+					LAST_ALU_NEG_OUT := ALU_NEG_OUT;
+					LAST_ALU_OVER_OUT := ALU_OVER_OUT;
+					ALU_CARRY_IN <= ALU_CARRY_OUT;
+					STATE := S_FETCH1;
+
+				when S_BRANCH1 =>
+					PC_INPUT_MUX_SEL <= S_TEMPORARY_OUTPUT;
+					PC_JUMP <= '1';
 					STATE := S_FETCH1;
 
 				when S_CALL1 =>

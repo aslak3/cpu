@@ -65,8 +65,8 @@ begin
 
 	RAM_DATA_IN <= DATA_OUT when (WRITE = '1' and ADDRESS (14 downto 12) = "000") else x"0000";
 	RAM_WRITE <= '1' when (WRITE = '1' and ADDRESS (14 downto 12) = "000") else '0';
-	LEDR <= DATA_OUT when (WRITE = '1' and ADDRESS (14 downto 7) = x"40");
-	SEVENSEG_DATA <= DATA_OUT when (WRITE = '1' and ADDRESS (14 downto 7) = x"41");
+	LEDR <= DATA_OUT when (WRITE = '1' and ADDRESS (14 downto 7) = x"80");
+	SEVENSEG_DATA <= DATA_OUT when (WRITE = '1' and ADDRESS (14 downto 7) = x"81");
 	VGA_DATA_IN <= DATA_OUT when (WRITE = '1' and ADDRESS (14) = '1');
 
 	DATA_IN <= RAM_DATA_OUT when (READ = '1' and ADDRESS (14 downto 12) = "000") else x"0000";
