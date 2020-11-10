@@ -16,12 +16,12 @@ start:		load.w r7,#0x2000		; stack pointer
 		test r0				; ... starting from the end
 		branchnz .clearloop		; back for more?
 
-		load.w r0,#lcdinitseq
-		load.w r1,#LCD_CONTROL
-		callbranch lcdoutput
-		load.w r0,#lcdtitlemsg
-		load.w r1,#LCD_DATA
-		calljump lcdoutput		; do a jump just for fun
+		load.w r0,#lcdinitseq		; get the init sequence
+		load.w r1,#LCD_CONTROL		; its going in control port
+		callbranch lcdoutput		; write it out
+		load.w r0,#lcdtitlemsg		; get the message
+		load.w r1,#LCD_DATA		; its going in data port
+		calljump lcdoutput		; do a calljump just for fun
 
 		load.w r0,#1			; breakpoint shows a number
 		callbranch breakpoint		; and waits for a button
@@ -83,14 +83,14 @@ mainloop:	load.bu r1,headpos		; current head pos
 		sub r1,r0			; subtract length
 		and r1,#0xff			; wrap it 0->255
 		load.bu r0,#TILE_BLANK		; blanking the end
-		callbranch drawsnakepart		; blank the old tail
+		callbranch drawsnakepart	; blank the old tail
 
 		load.w r0,#7
 		callbranch breakpoint
 
 		load.bu r1,headpos		; drawing from current head
 		load.bu r0,#TILE_BODY		; snake will be headless
-		callbranch drawsnakepart		; poor snake
+		callbranch drawsnakepart	; poor snake
 
 		load.w r0,#8
 		callbranch breakpoint
@@ -105,7 +105,7 @@ mainloop:	load.bu r1,headpos		; current head pos
 		load.bu r1,headpos		; get new headpos
 		load.bu r0,snakedirection	; what way are we moving?
 		add r0,#TILE_HEAD_RIGHT		; offset into the heads
-		callbranch drawsnakepart		; draw the head
+		callbranch drawsnakepart	; draw the head
 
 		load.w r0,#9
 		callbranch breakpoint
@@ -191,7 +191,7 @@ vertloop:	store.b (ORIGIN+WIDTH,r1),r0
 		load.w r2,#titlemsg		; the tile
 		callbranch printmsg
 
-		load.bu r0,lives		; get current lives
+		load.bu r0,(lives,pc)		; get current lives
 		add r0,#0x30			; ascii 0
 		store.b (livesmsg+7),r0		; add the number
 		clear r0			; top row
@@ -315,7 +315,6 @@ docollision:	load.bu r1,headpos
 		branchz yumyum			; yes? eat it!
 		load.w r0,#1			; mark death for caller
 		return
-
 yumyum:		load.bu r0,snakelength		; get length
 		inc r0				; snake gets longer
 		store.b snakelength,r0		; save new length
@@ -333,21 +332,24 @@ printmsg:	mulu r0,#WIDTH			; get the start of the row
 .loop:		load.bu r1,(r2)			; get the char
 		test r1				; checking for null
 		branchz printmsgo		; done?
-		store.b (ORIGIN,r0),r1			; output the char
+		store.b (ORIGIN,r0),r1		; output the char
 		inc r2				; move to next char
 		inc r0
 		branch .loop
 printmsgo:	return
 
+; gets a byte from ps2 port in r0, but does not wait for it, r0=0 means
+; nothing currently available
+
 getps2byte:	load.bu r0,PS2_STATUS		; get from the status reg
 		test r0				; nothing?
 		branchz .nothing		; keep waiting....
 		load.bu r0,PS2_SCANCODE		; get the scancode
-		compare r0,#0xf0
-		branchz .nothing
-		store.w SEVENSEG,r0
-		return
-.nothing:	clear r0
+		compare r0,#0xf0		; key-break seqence
+		branchz .nothing		; yes? exit early
+		store.w SEVENSEG,r0		; output the scancode (fun)
+		return				; done
+.nothing:	clear r0			; nothing? set 0 in r0
 		return
 
 ; write the string in r0 to the lcd address r1, which might be control or
@@ -377,9 +379,9 @@ breakpoint:	;store.w SEVENSEG,r0
 		;branchz .l2
 		return
 
-titlemsg:	#str " Snake? \0"
+titlemsg:	#str " Snake! \0"
 livesmsg:	#str " Lives:X \0"
-gameovermsg:	#str "Game over\0"
+gameovermsg:	#str "Game Over\0"
 lcdtitlemsg:	#str "X   Snake v0.1   XXXXXXXXXXXXXXXXXXXXXXXX"
 		#str "Lawrence ManningXXXXXXXXXXXXXXXXXXXXXXXX\0"
 
@@ -397,7 +399,7 @@ bss:
 
 ; variables: words
 
-movementdelay:	#res 2
+movementdelay:	#res 2			; 600*256 decreasing 5*256 per food
 randomseed:	#res 2
 
 ; variables: bytes

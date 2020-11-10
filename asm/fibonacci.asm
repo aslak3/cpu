@@ -22,8 +22,10 @@ loop:		copy r2,r1			; copy the last written value
 		incd r3				; increment alternative
 		sub r4,#1			; decrement the space for fibs counter
 		branchnz loop			; back if we have more room
-done:		load.w r5,#0x2a2a		; just so we can test store
+done:		load.w r5,(twoah,pc)		; just so we can test store
 		store.w 0xc0,r5			; ...
+		add r5,#0x0101
+		store.w (twobee,pc),r5
 		load.w r5,#0xaa55		; and storer
 		load.w r1,#0x00c2		; ...
 		store.w (r1),r5			; ...
@@ -31,5 +33,7 @@ foo:		return				; finished inner sub
 		#d16 0x1			; initial value
 length:		#d16 16				; and the length (words)
 zero:		#d16 0
+twoah:		#d16 0x2a2a
+twobee:		#d16 0
 
 fib:

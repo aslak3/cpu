@@ -16,7 +16,7 @@ This is of course a work in progress.
 * 8 x 16 bit general purpose registers
 * 16 bit Program Counter
 * Load an immediate 16 bit quantity at the following address
-* Load and store instructions operate either through a register, an immediate address or a register with an immediate displacement
+* Load and store instructions operate either through a register, an immediate address or a register with an immediate displacement, or the program counter with an immediate displacement
 * Clear instruction
 * Simple status bits: zero, negative, carry
 * ALU operations including
@@ -35,10 +35,9 @@ This is of course a work in progress.
 * Interrupts, including software traps
 * Testbench for the controller
 * Add more instructions!
-  - Relative addressing on loads and stores with the PC
   - (Better) multiply and divide?
   - Barrel shifter?
-  - Restricting ALU ops to byte wide values might be useful
+  - Restricting ALU ops to byte wide values might be useful, but probably not
   - ....
 * Better status bits: not currently settable via an opcode, nor are they changed on anything other then an ALU instruction
   * This unfortuantely includes the LOADRD and STORED opcodes, which is confusing and wrong
@@ -185,6 +184,28 @@ This is of course a work in progress.
 </tr>
 <tr>
 <td colspan='17'>[Dst addr reg + IMMEDIATE] &leftarrow; Src reg</td>
+</tr>
+<tr>
+<td>LOADPCD</td>
+<td colspan='6'>0b011110</td>
+<td>Byte</td>
+<td>Signed</td>
+<td colspan='5'>-</td>
+<td colspan='3'>Dst reg</td>
+</tr>
+<tr>
+<td colspan='17'>Dst reg &leftarrow; [PC reg + IMMEDIATE]</td>
+</tr>
+<tr>
+<td>STOREPCD</td>
+<td colspan='6'>0b011111</td>
+<td>Byte</td>
+<td>Signed</td>
+<td colspan='5'>-</td>
+<td colspan='3'>Src reg</td>
+</tr>
+<tr>
+<td colspan='17'>[PC reg + IMMEDIATE] &leftarrow; Src reg</td>
 </tr>
 <tr>
 <td>ALUM</td>

@@ -5,6 +5,8 @@ use IEEE.STD_LOGIC_1164.all;
 --
 -- Moves Source and Destination Register (with optional immediate displacement):
 -- [Opcode: 15 downto 10][Byte: 9][Signed: 8][Source: 5 downto 3][Destination: 2 downto 0]
+-- Moves from PC with displacement to Destination Register
+-- [Opcode: 15 downto 10][Byte: 9][Signed: 8][Destination: 2 downto 0]
 -- Moves Destination Register:
 -- [Opcode: 15 downto 10][Byte: 9][Signed: 8][Destination: 2 downto 0]
 -- Jump/Branch:
@@ -35,6 +37,8 @@ package P_CONTROL is
 	constant OPCODE_STORER :		T_OPCODE := "001011";
 	constant OPCODE_LOADRD :		T_OPCODE := "011010";
 	constant OPCODE_STORERD :		T_OPCODE := "011011";
+	constant OPCODE_LOADPCD :		T_OPCODE := "011110";
+	constant OPCODE_STOREPCD :		T_OPCODE := "011111";
 
 	constant OPCODE_ALUM :			T_OPCODE := "001110";
 	constant OPCODE_ALUS :			T_OPCODE := "001111";
@@ -259,27 +263,24 @@ begin
 							CYCLETYPE <= INSTRUCTION_CYCLETYPE;
 							STATE := S_FETCH1;
 
-						when OPCODE_LOADRD =>
-							report "Control: Opcode LOADRD";
+						when OPCODE_LOADRD | OPCODE_LOADPCD | OPCODE_STORERD | OPCODE_STOREPCD =>
+							report "Control: Opcode LOADRD/LOADPCD/STORERD/STOREPCD";
 							ADDRESS_MUX_SEL <= S_PC;
 							READ <= '1';
-							ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
+							if (INSTRUCTION_OPCODE = OPCODE_LOADRD or INSTRUCTION_OPCODE = OPCODE_STORERD) then
+								ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
+							else
+								ALU_LEFT_MUX_SEL <= S_PC;
+							end if;
 							ALU_RIGHT_MUX_SEL <= S_DATA_IN;
 							ALU_OP_MUX_SEL <= S_ADD;
 							TEMPORARY_INPUT_MUX_SEL <= S_ALU_RESULT;
 							TEMPORARY_WRITE <= '1';
-							STATE := S_LOADRD1;
-
-						when OPCODE_STORERD =>
-							report "Control: Opcode STORERD";
-							ADDRESS_MUX_SEL <= S_PC;
-							READ <= '1';
-							ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
-							ALU_RIGHT_MUX_SEL <= S_DATA_IN;
-							ALU_OP_MUX_SEL <= S_ADD;
-							TEMPORARY_INPUT_MUX_SEL <= S_ALU_RESULT;
-							TEMPORARY_WRITE <= '1';
-							STATE := S_STORERD1;
+							if (INSTRUCTION_OPCODE = OPCODE_LOADRD or INSTRUCTION_OPCODE = OPCODE_LOADPCD) then
+								STATE := S_LOADRD1;
+							else
+								STATE := S_STORERD1;
+							end if;
 
 						when OPCODE_JUMP | OPCODE_BRANCH =>
 							if (INSTRUCTION_OPCODE = OPCODE_JUMP) then

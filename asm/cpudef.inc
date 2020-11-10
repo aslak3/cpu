@@ -76,6 +76,8 @@
 		0b001010 @ width[1:0] @ 0b00 @ src[2:0] @ dst[2:0]
 	load.{width:loadtype} {dst:reg}, ({offset},{src:reg}) ->
 		0b011010 @ width[1:0] @ 0b00 @ src[2:0] @ dst[2:0] @ offset[15:0]
+	load.{width:loadtype} {dst:reg}, ({offset},pc) ->
+		0b011110 @ width[1:0] @ 0b00 @ 0b000 @ dst[2:0] @ { offset - pc - 2 }[15:0]
 
 	clear {dst:reg} ->
 		0b001100 @ 0b0000 @ 0b000 @ dst[2:0]
@@ -86,6 +88,8 @@
 		0b001011 @ width[1:0] @ 0b00 @ dst[2:0] @ src[2:0]
 	store.{width:storetype} ({offset},{dst:reg}), {src:reg} ->
 		0b011011 @ width[1:0] @ 0b00 @ dst[2:0] @ src[2:0] @ offset[15:0]
+	store.{width:storetype} ({offset},pc), {src:reg} ->
+		0b011111 @ width[1:0] @ 0b00 @ 0b000 @ src[2:0] @ { offset - pc - 2 }[15:0]
 
 	jump {target} ->
 		0b000010 @ 0b00 @ 0b00000000 @ target[15:0]
