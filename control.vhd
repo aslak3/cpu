@@ -63,13 +63,14 @@ package P_CONTROL is
 	constant CYCLETYPE_BYTE_SIGNED :	T_CYCLETYPE := "11";
 
 	type T_STATE is (
-		S_ALU1,
+		S_START1,
 		S_FETCH1, S_FETCH2,
 		S_DECODE,
 		S_HALT1,
 		S_LOADM1, S_STOREM1,
 		S_LOADRD1, S_STORERD1,
 		S_BRANCH1,
+		S_ALU1,
 		S_CALL1, S_CALL2,
 		S_PUSHQUICK1, S_POPQUICK1
 	);
@@ -156,7 +157,7 @@ begin
 		variable LAST_ALU_OVER_OUT : STD_LOGIC := '0';
 	begin
 		if (RESET = '1') then
-			STATE := S_FETCH1;
+			STATE := S_START1;
 
 			ALU_LEFT_MUX_SEL <= S_INSTRUCTION_LEFT;
 			ALU_RIGHT_MUX_SEL <= S_INSTRUCTION_RIGHT;
@@ -193,6 +194,15 @@ begin
 			TEMPORARY_WRITE <= '0';
 
 			case STATE is
+				when S_START1 =>
+					report "In S_START1";
+					ADDRESS_MUX_SEL <= S_PC;
+					CYCLETYPE <= CYCLETYPE_WORD;
+					READ <= '1';
+					PC_INPUT_MUX_SEL <= S_DATA_IN;
+					PC_JUMP <= '1';
+					STATE := S_FETCH1;
+
 				when S_FETCH1 =>
 					report "In S_FETCH1";
 					ADDRESS_MUX_SEL <= S_PC;
@@ -213,6 +223,7 @@ begin
 							STATE := S_FETCH1;
 
 						when OPCODE_HALT =>
+							report "Control: Opcode HALT";
 							HALTED <= '1';
 							STATE := S_HALT1;
 
@@ -381,7 +392,6 @@ begin
 --pragma synthesis_on
 							STATE := S_FETCH1;
 					end case;
-
 
 				when S_HALT1 =>
 					STATE := S_HALT1;

@@ -65,7 +65,7 @@
 	}
 
 	nop -> 0x0000
-	halt -> 0xb101010 @ 0b000000000000
+	halt -> 0b101010 @ 0b0000000000
 
 	load.{width:loadtype} {dst:reg}, #{value} ->
 		0b000100 @ width[1:0] @ 0b00 @ 0b000 @ dst[2:0] @ value[15:0]

@@ -21,6 +21,7 @@ architecture behavioral of cpu_tb is
 	signal UPPER_DATA : STD_LOGIC;
 	signal LOWER_DATA : STD_LOGIC;
 	signal BUS_ERROR : STD_LOGIC;
+	signal HALTED : STD_LOGIC;
 	signal READ : STD_LOGIC;
 	signal WRITE : STD_LOGIC;
 
@@ -60,7 +61,8 @@ begin
 		LOWER_DATA => LOWER_DATA,
 		BUS_ERROR => BUS_ERROR,
 		READ => READ,
-		WRITE => WRITE
+		WRITE => WRITE,
+		HALTED => HALTED
 	);
 
 	RAM_DATA_IN <= DATA_OUT when (WRITE = '1' and ADDRESS (14 downto 12) = "000") else x"0000";
@@ -110,7 +112,11 @@ begin
 		for C in 0 to 8000 loop
 			clock_delay;
 			if (BUS_ERROR = '1') then
-				report "Bus error at " & to_hstring(ADDRESS) & " HALTED";
+				report "Bus error at " & to_hstring(ADDRESS & '0') & " HALTED";
+				exit;
+			end if;
+			if (HALTED = '1') then
+				report "Processor HALT at " & to_hstring(ADDRESS & '0');
 				exit;
 			end if;
 		end loop;

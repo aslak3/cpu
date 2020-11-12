@@ -1,4 +1,7 @@
-		load.w r0,#0xf00f		; canary - r0 is a bomb
+		#d16 realstart
+		halt
+
+realstart:	load.w r0,#0xf00f		; canary - r0 is a bomb
 		load.w r7,#0x200		; stack pointer(!)
 		callbranch outter		; call the outter sub
 hop:		branch hop			; on return, hop

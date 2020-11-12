@@ -4,6 +4,9 @@ ORIGIN=0x4000
 WIDTH=40
 HEIGHT=30
 
+		#d16 start			; restart vector
+		halt
+
 start:		load.w r7,#0x2000		; stack pointer
 
 		load.w r0,#1			; game mode
